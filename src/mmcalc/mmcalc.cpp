@@ -69,13 +69,13 @@ namespace mmc {
         string str;
         Unumber num;
 
-        Token(string s) : typ(Raw), str(std::move(s)), num(0) {}
+        explicit Token(string s) : typ(Raw), str(std::move(s)), num(0) {}
 
-        Token(char c) : typ(Raw), str(string() + c), num(0) {}
+        explicit Token(char c) : typ(Raw), str(string() + c), num(0) {}
 
-        Token(Unumber n) : typ(Num), num(n) {}
+        explicit Token(Unumber n) : typ(Num), num(n) {}
 
-        Token(Token::Typ t, string s = "") : typ(t), str(std::move(s)) {}
+        explicit Token(Token::Typ t, string s = "") : typ(t), str(std::move(s)) {}
 
         bool is(const string &s) const { return typ == Raw && str == s; }
 
@@ -104,7 +104,7 @@ struct Value {
 
     Value() = default;
 
-    Value(const Token &t) { x.push_back(t); }
+    explicit Value(const Token &t) { x.push_back(t); }
 
     string tos(unsigned base) const;
 
@@ -245,7 +245,7 @@ void statement() {
     }
     if (t.is(";")) return;
 
-    throw "Unexpected token [" + (t.typ == Token::Num ? t.num.str() : t.str) + "]:" + tos(t.typ);
+    throw std::runtime_error("Unexpected token [" + (t.typ == Token::Num ? t.num.str() : t.str) + "]:" + tos(t.typ));
 }
 
 Token input_token() {
@@ -297,8 +297,7 @@ Token input_token_nodic() {
 
     if (comm) goto read;
 
-    if (0);
-    else if (std::isdigit(c)) {
+    if (std::isdigit(c)) {
         gin->putback(c);
         return input_number();
     } else if (std::isalpha(c) || c == '_') {
@@ -318,7 +317,7 @@ Token symb() {
     if (c == ';' || c == ',' || c == '(' || c == ')'
         || c == '[' || c == ']' || c == '!' || c == ':'
         || c == '{' || c == '}' || c == '.')
-        return c;
+        return Token(c);
 
 
     if (c == '+' || c == '-' || c == '/' || c == '*'
@@ -330,19 +329,19 @@ Token symb() {
 
 Token oper2(char c) {
     int ic = gin->get();
-    if (ic == std::char_traits<char>::eof()) return c;
+    if (ic == std::char_traits<char>::eof()) return Token(c);
     char c2 = char(ic);
 
     if (c2 != '=') {
         gin->putback(c2);
-        return c;
+        return Token(c);
     }
 
     return Token(string() + c + c2);
 }
 
 Token input_word() {
-    string s;
+    string s{};
     while (true) {
         int ic = gin->get();
         if (ic == std::char_traits<char>::eof()) break;
@@ -354,7 +353,7 @@ Token input_word() {
         }
     }
 
-    return s;
+    return Token(s);
 }
 
 Token input_number() {
@@ -411,8 +410,7 @@ Value expr() {
 
     while (true) {
         t = input_token();
-        if (0) {}
-        else if (t.is(",")) es.opin(esub(), ',');
+        if (t.is(",")) es.opin(esub(), ',');
         else if (t.is(":")) es.opin(esub(), ':');
         else if (t.is(".")) es.opin(esub(), '.');
         else {
@@ -428,7 +426,7 @@ Value esub() {
 
     Value tr = term();
 
-    while (1) {
+    while (true) {
         Token t = input_token();
         if (t.is("+")) tr += term();
         else if (t.is("-")) tr -= term();
@@ -446,7 +444,7 @@ Value term() {
 
     Value pw = powr();
 
-    while (1) {
+    while (true) {
         Token t = input_token();
         if (t.is("*")) pw *= powr();
         else if (t.is("/")) pw /= powr();
@@ -464,7 +462,7 @@ Value powr() {
 
     Value pr = prim();
 
-    while (1) {
+    while (true) {
         Token t = input_token();
         if (t.is("^")) pr &= prim();
         else if (t.is("!")) pr.factorial();
@@ -474,7 +472,7 @@ Value powr() {
             Token t2 = input_token();
             if (!t2.is("]")) {
                 putback(t2);
-                throw string() + "Expecting ']'";
+                throw std::runtime_error("Expecting ']'");
             }
         } else {
             putback(t);
@@ -489,8 +487,8 @@ Value powr() {
 Value prim() {
     Token t = input_token();
 
-    if (t.typ == Token::Str) return t;
-    if (t.typ == Token::Num) return t;
+    if (t.typ == Token::Str) return Value(t);
+    if (t.typ == Token::Num) return Value(t);
 
     if (t.typ != Token::Raw) throw std::runtime_error("Unknown error at 'prim'");
 
@@ -498,7 +496,7 @@ Value prim() {
     if (it != vars.end()) return it->second;
 
     if (t.is("-")) {
-        Value r(Unumber(0));
+        Value r(Token(Unumber(0)));
         r -= prim();
         return r;
     }
@@ -578,16 +576,16 @@ Value deletevar() {
     if (t.typ != Token::Raw)
         throw std::runtime_error("Bad token for delete function");
 
-    if (vars.find(t.str) == vars.end()) return {0};
+    if (vars.find(t.str) == vars.end()) return Value(Token(0));
     vars.erase(t.str);
-    return {1};
+    return Value(Token(1));
 }
 
 Value ordf() {
     Value v = expr(), r;
 
     for (auto &i: v.x)
-        r.x.push_back(i.opout(i, 'o', 0));
+        r.x.push_back(i.opout(i, 'o', nullptr));
 
     return r;
 }
@@ -595,8 +593,7 @@ Value ordf() {
 Value func() {
     Token t = input_token();
 
-    if (0) {}
-    else if (t.is("print")) return print(10);
+    if (t.is("print")) return print(10);
     else if (t.is("printhex")) return print(16);
     else if (t.is("printbin")) return print(2);
     else if (t.is("delete")) return deletevar();
@@ -672,8 +669,7 @@ void Value::opin(const Value &v, char op) {
 
     for (size_t i = 0; i < x.size(); i++)
         for (auto &j: v.x) {
-            if (0);
-            else if (op == 'i') {
+            if (op == 'i') {
                 if (x[i] == j)
                     r.x.emplace_back(Unumber(i));
             } else if (op == ':') {
@@ -724,32 +720,29 @@ Token Token::opout(Token t, char op, Token *b) const {
     auto it = vars.find(modulus);
     if (it != vars.end() && it->second.x.size() == 1) mod = it->second.x[0].num;
 
-    if (0) {}
-    else if (op == '%') return m.num % t.num;
-    else if (op == 'd') return m.num.div(t.num, b->num);
+    if (op == '%') return Token(m.num % t.num);
+    else if (op == 'd') return Token(m.num.div(t.num, b->num));
 
     if (!mod.iszero()) {
         if (!(m.num < mod)) m.num = m.num % mod;
         if (!(t.num < mod) && (op != '^')) t.num = t.num % mod;
     }
 
-    if (0) {}
-
-    else if (op == '+') {
+    if (op == '+') {
         m.num += t.num;
-
-        if (!mod.iszero())
-            while (!(m.num < mod))
+        if (!mod.iszero()) {
+            while (!(m.num < mod)) {
                 m.num -= mod;
-
-        return m.num;
-    } else if (op == '*') return (mod.iszero() ? m.num * t.num : m.num.mul(t.num, mod));
+            }
+        }
+        return Token(m.num);
+    } else if (op == '*') return Token(mod.iszero() ? m.num * t.num : m.num.mul(t.num, mod));
 
     else if (op == '-') {
         if (m.num < t.num) m.num += mod;
         m.num -= t.num;
 
-        return m.num;
+        return Token(m.num);
     } else if (op == 'f') {
         Unumber r(1);
         while (!m.num.iszero()) {
@@ -759,27 +752,27 @@ Token Token::opout(Token t, char op, Token *b) const {
                 r = m.num.mul(r, mod);
             --m.num;
         }
-        return r;
+        return Token(r);
     } else if (op == 'o') {
-        if (mod.iszero()) return Unumber(0);
+        if (mod.iszero()) return Token(Unumber(0));
         Unumber r = m.num;
         for (Unumber i = 1; i < mod; ++i) {
-            if (r == 1) return i;
+            if (r == 1) return Token(i);
             r = r.mul(m.num, mod);
         }
-        return Unumber(0);
+        return Token(Unumber(0));
     } else if (op == 'g') {
-        return ma::gcd(t.num, m.num);
+        return Token(ma::gcd(t.num, m.num));
     } else if (op == 'l') {
         Unumber g = ma::gcd(t.num, m.num);
-        if (g.iszero()) return 0;
-        return t.num / g * m.num;
+        if (g.iszero()) return Token(0);
+        return Token(t.num / g * m.num);
     } else if (op == '^') {
         if (mod.iszero()) mod -= 1;
         m.num.pow(t.num, mod);
-        return m.num;
+        return Token(m.num);
     } else if (op == '/') {
-        if (mod.iszero()) return m.num / t.num;
+        if (mod.iszero()) return Token(m.num / t.num);
         Unumber xm1;
         bool k = ma::invert(t.num, mod, &xm1);
         if (!k) {
@@ -796,7 +789,7 @@ Token Token::opout(Token t, char op, Token *b) const {
                 return t;
             }
         }
-        return m.num.mul(xm1, mod);
+        return Token(m.num.mul(xm1, mod));
     } else
         throw std::runtime_error(std::string("Operation [") + op + "] not supported");
 }
@@ -848,7 +841,7 @@ bool operator==(Value v1, Value v2) {
 
 Value sizef() {
     Value v = expr();
-    return {Token(Unumber(v.x.size()))};
+    return Value(Token(Unumber(v.x.size())));
 }
 
 Value define() {

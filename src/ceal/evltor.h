@@ -20,7 +20,7 @@ class Evaluator {
     Root *root;
 
 public:
-    Evaluator(Pnode i) : root(i->root()) {}
+    explicit Evaluator(const Pnode& i) : root(i->root()) {}
 
     void subst_macros();
 

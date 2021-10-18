@@ -18,11 +18,11 @@
 void Evaluator::expand_items() {
     Nodes &instructions = root->children;
 
-    for (auto i: instructions) {
+    for (const auto& i: instructions) {
         Nodes old = i->children;
         i->children.clear();
 
-        for (auto l: old) {
+        for (const auto& l: old) {
             Litem *pl = get<Litem>(LNFUN, l);
 
             if (pl->typ != Litem::eItm) {
@@ -67,7 +67,7 @@ void Evaluator::expand_items() {
                         if (!vts.s.iszero()) throw Err("Expr in [] evaluates to encrypted value", itm->tok());
                         sz = int(vts.t.to_ull());
                     }
-                    catch (Err e) {
+                    catch (Err& e) {
                         throw Err("Only number or const expr allowed in []\nMore info: " + e.str(), itm->tok());
                     }
 
@@ -151,7 +151,7 @@ void Evaluator::fill3() {
     root->children.clear();
 
     for (auto i: instructions) {
-        Instruction *pi = get<Instruction>(LNFUN, i);
+        auto *pi = get<Instruction>(LNFUN, i);
 
         if (pi->children.empty()) continue;
         root->addChild(i);
@@ -172,7 +172,7 @@ void Evaluator::fill3() {
         }
 
         if (pi->children.size() < 3) {
-            Plitem nl = make_litem('\0', empty, i.get()->tok(), false, true);
+            Plitem nl = make_litem('\0', empty, i->tok(), false, true);
 
             i->addChild(nl);
         }
@@ -200,7 +200,7 @@ void Evaluator::set_address() {
 
         Nodes &lis = i->children;
 
-        for (auto l: lis) {
+        for (const auto& l: lis) {
             Litem *pl = get<Litem>(LNFUN, l);
 
             try {
@@ -428,7 +428,7 @@ void Evaluator::subst_macros() {
         for (auto i: old) {
             Instruction *pin = get<Instruction>(NOTHR, i);
             if (pin) {
-                for (auto j: leftovers)
+                for (const auto& j: leftovers)
                     i->children[0]->children[1]->children.push_back(j);
 
                 leftovers.clear();
@@ -441,7 +441,7 @@ void Evaluator::subst_macros() {
             gtok = u->tok();
 
             if (u->name() == "@end") {
-                for (auto j: u->children[0]->children)
+                for (const auto& j: u->children[0]->children)
                     leftovers.push_back(j);
                 continue;
             }

@@ -66,7 +66,7 @@ struct Node : protected Token {
 
     Node(Node *p, Token t) : Token(std::move(t)), parent(p) {}
 
-    Node(Token t) : Token(std::move(t)), parent(nullptr) {}
+    explicit Node(Token t) : Token(std::move(t)), parent(nullptr) {}
 
     virtual ~ Node() = default;
 
@@ -92,13 +92,15 @@ protected:
 
     Pnode baseclone(Pnode) const;
 
-    Node(const Node &) = delete;
-
     friend class Evaluator;
+
+
+public:
+    Node(const Node &) = delete;
 };
 
 struct Labels : Node {
-    Labels(Token t) : Node(std::move(t)) {}
+    explicit Labels(Token t) : Node(std::move(t)) {}
 
     string print() const final { return "labels"; }
 
@@ -148,7 +150,7 @@ struct Instruction : Node {
 
     bool tilda;
 
-    Instruction(Token t) : Node(t), typ(eThree), tilda(false) {}
+    explicit Instruction(Token t) : Node(std::move(t)), typ(eThree), tilda(false) {}
 
     string print() const final {
         return string("instruction ") + (tilda ? "~" : "") + ".c3"[typ];
@@ -185,7 +187,7 @@ struct Item : Node {
     Typ typ;
     bool tilda;
 
-    Item(Token tk) : Node(std::move(tk)), typ(eNull), tilda(false) {}
+    explicit Item(Token tk) : Node(std::move(tk)), typ(eNull), tilda(false) {}
 
     string print() const final;
 
@@ -200,7 +202,7 @@ struct Expr : Node, HasTsValue {
     };
     Typ typ;
 
-    Expr(Token tk) : Node(tk), typ(eTerm) {}
+    explicit Expr(Token tk) : Node(tk), typ(eTerm) {}
 
     string print() const final { return string("expr ") + "t+-"[typ]; }
 
@@ -212,7 +214,7 @@ struct Expr : Node, HasTsValue {
 struct Idn : Node {
     using Node::s;
 
-    Idn(Token t) : Node(std::move(t)) {}
+    explicit Idn(Token t) : Node(std::move(t)) {}
 
     string print() const final { return "id: " + s; }
 
@@ -241,7 +243,7 @@ struct Cnst : Node, HasTsValue {
 struct Unum : Node {
     using Node::un;
 
-    Unum(Token t) : Node(t) {}
+    explicit Unum(Token t) : Node(t) {}
 
     string print() const final { return "unum " + un.str(); }
 
@@ -333,7 +335,7 @@ struct Macdef final : Node {
     std::set<string> entries; // globals which are defined inside
     // such as entry points in macro functions: start/end
 
-    Macdef(Token tk) : Node(tk) {}
+    explicit Macdef(Token tk) : Node(std::move(tk)) {}
 
     string print() const final;
 

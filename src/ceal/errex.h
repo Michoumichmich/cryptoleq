@@ -8,6 +8,7 @@
 
 #include <string>
 #include <sstream> // bug see below
+#include <utility>
 
 #include "nodes.h"
 
@@ -31,7 +32,7 @@ public:
 
     Err(const string &s, const Token &, const Token &);
 
-    Err(const string &s) : msg(s) {}
+    explicit Err(string s) : msg(std::move(s)) {}
 
     Err(int ln, const char *fn, const char *fl);
 
