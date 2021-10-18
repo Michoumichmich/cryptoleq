@@ -3,12 +3,12 @@ COMPILER=g++
 COMPILERC=gcc
 ARCR=ar crs #
 AR=arXXX
-LD=ld
+LD=ld -flto=full
 RANLIB=ranlibXXX
 STRIP=strip
 
-OPT=-Wall -O2 -std=c++17 -fno-strict-aliasing -march=native -mtune=native -flto
-OPTC=-Wall -O2
+OPT=-Wall -O2 -std=c++17 -fno-strict-aliasing -march=native -mtune=native -flto=full
+OPTC=-Wall -O2 -fno-strict-aliasing -march=native -mtune=native -flto=full
 
 INC=
 EEXT=
