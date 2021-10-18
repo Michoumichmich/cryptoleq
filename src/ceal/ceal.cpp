@@ -180,7 +180,7 @@ void tmain(int ac, const char * av[])
 
         ctx.evaluate(itr);
 
-        bool outputx = (pgm.cqtype == pgm.Cqtype::X);
+        bool outputx = (pgm.cqtype == Pragma::Cqtype::X);
         auto out_stream = ctx.compile(itr, outputx);
 
         data = ctx.write(out_stream, pgm);

@@ -28,8 +28,7 @@ static bool prn = false;
 
 string tos(int x)
 {
-    return static_cast<std::ostringstream *>
-           ( &(std::ostringstream() << x) )->str();
+    std::to_string(x);
 }
 
 /*
@@ -467,46 +466,6 @@ Value prim()
     return func();
 }
 
-Value func()
-{
-    Token t = input_token();
-
-    Value print(unsigned base);
-    Value modexpr();
-    Value divide();
-    Value deletevar();
-    Value factors();
-    Value factor1();
-    Value assert();
-    Value sizef();
-    Value define();
-    Value index();
-    Value gcdf();
-    Value lcmf();
-    Value ordf();
-
-    if (0) {}
-    else if ( t.is("print") ) return print(10);
-    else if ( t.is("printhex") ) return print(16);
-    else if ( t.is("printbin") ) return print(2);
-    else if ( t.is("delete") ) return deletevar();
-    else if ( t.is("quit") || t.is("exit") || t.is("q") ) { go_on = false; return Value(); }
-    else if ( t.is("div") ) return divide();
-    else if ( t.is("mod") ) return modexpr();
-    else if ( t.is("factors") ) return factors();
-    else if ( t.is("factor") ) return factor1();
-    else if ( t.is("assert") ) return assert();
-    else if ( t.is("size") ) return sizef();
-    else if ( t.is("define") ) return define();
-    else if ( t.is("index") ) return index();
-    else if ( t.is("gcd") ) return gcdf();
-    else if ( t.is("lcm") ) return lcmf();
-    else if ( t.is("ord") ) return ordf();
-    else if ( t.is("prn") ) { prn = !prn; return Value(); }
-
-    throw "Function [" + t.str + "] is not defined";
-}
-
 Value print(unsigned base)
 {
     Value v = expr();
@@ -538,7 +497,7 @@ Value divide()
     return v1;
 }
 
-Value assert()
+Value assert_()
 {
     Value v1 = expr();
     Value v2 = expr();
@@ -590,6 +549,47 @@ Value ordf()
 
     return r;
 }
+
+Value func()
+{
+    Token t = input_token();
+
+    Value print(unsigned base);
+    Value modexpr();
+    Value divide();
+    Value deletevar();
+    Value factors();
+    Value factor1();
+    Value assert_();
+    Value sizef();
+    Value define();
+    Value index();
+    Value gcdf();
+    Value lcmf();
+    Value ordf();
+
+    if (0) {}
+    else if ( t.is("print") ) return print(10);
+    else if ( t.is("printhex") ) return print(16);
+    else if ( t.is("printbin") ) return print(2);
+    else if ( t.is("delete") ) return deletevar();
+    else if ( t.is("quit") || t.is("exit") || t.is("q") ) { go_on = false; return Value(); }
+    else if ( t.is("div") ) return divide();
+    else if ( t.is("mod") ) return modexpr();
+    else if ( t.is("factors") ) return factors();
+    else if ( t.is("factor") ) return factor1();
+    else if ( t.is("assert") ) return assert_();
+    else if ( t.is("size") ) return sizef();
+    else if ( t.is("define") ) return define();
+    else if ( t.is("index") ) return index();
+    else if ( t.is("gcd") ) return gcdf();
+    else if ( t.is("lcm") ) return lcmf();
+    else if ( t.is("ord") ) return ordf();
+    else if ( t.is("prn") ) { prn = !prn; return Value(); }
+
+    throw "Function [" + t.str + "] is not defined";
+}
+
 
 string Value::tos(unsigned base) const
 {

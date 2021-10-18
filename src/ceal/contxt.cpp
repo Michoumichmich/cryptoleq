@@ -153,7 +153,7 @@ string Context::write(const Tokens & tokens, Pragma & pgm)
     }
 
     if ( !pgm.entry.empty() ) out << " entry=" << pgm.entry;
-    if ( pgm.cqtype == pgm.Cqtype::X ) out << " cqtype=x";
+    if ( pgm.cqtype == Pragma::Cqtype::X ) out << " cqtype=x";
     out << " id=" << pgm.id << " ver=" << pgm.ver;
 
     //out << '\n'; // new line is added by "tokens[0].line-1"
