@@ -7,7 +7,7 @@ exit_tests_fail=2
 exit_error=3
 exit_status=$exit_ok
 
-uname -o | grep -i "Linux" > /dev/null && CURROS="Linux" || CURROS="Windows"
+CURROS="Linux"
 
 cwd="$(pwd)"
 [ "z${CURROS}" = "zLinux" ] && cd "$(dirname "$0")" || cd "$(dirname "${BASH_SOURCE[0]}")"
@@ -43,7 +43,7 @@ PLAT=$2
 shift 2
 fi
 
-[ "z${CURROS}" = "zLinux" ] && PLAT=${PLAT:-unx} || PLAT=${PLAT:-msc}
+PLAT="unx"
 
 execdir=_bin_${PLAT}
 

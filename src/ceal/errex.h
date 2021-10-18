@@ -14,28 +14,37 @@
 using std::string;
 
 
-class Err
-{
-        string msg;
+class Err {
+    string msg;
 
-        static string tok_str(const Token &);
-        static string lnpos_str(int ln, int ps, int fidx);
-        static string lntok_str(const Token &);
+    static string tok_str(const Token &);
 
-    public:
+    static string lnpos_str(int ln, int ps, int fidx);
 
-        Err(const string & s, int ln, int ps, int fidx);
-        Err(const string & s, const Token &);
-        Err(const string & s, const Token &, const Token &);
-        Err(const string & s) : msg(s) {}
-        Err(int ln, const char * fn, const char * fl);
+    static string lntok_str(const Token &);
 
-        string str() const { return msg; }
+public:
+
+    Err(const string &s, int ln, int ps, int fidx);
+
+    Err(const string &s, const Token &);
+
+    Err(const string &s, const Token &, const Token &);
+
+    Err(const string &s) : msg(s) {}
+
+    Err(int ln, const char *fn, const char *fl);
+
+    string str() const { return msg; }
 };
 
 namespace bug // as of today gcc 4.9.2 cygwin does not have to_string
 {
-template <class T> inline string to_string(T x)
-{ std::ostringstream os; os << x; return os.str(); }
+    template<class T>
+    inline string to_string(T x) {
+        std::ostringstream os;
+        os << x;
+        return os.str();
+    }
 } // bug
 

@@ -7,7 +7,7 @@ LD=ld
 RANLIB=ranlibXXX
 STRIP=strip
 
-OPT=-Wall -O2 -std=c++11 -fno-strict-aliasing
+OPT=-Wall -O2 -std=c++17 -fno-strict-aliasing -march=native -mtune=native -flto
 OPTC=-Wall -O2
 
 INC=

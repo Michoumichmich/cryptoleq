@@ -16,17 +16,13 @@ std::vector<string> Input_token_stream::include_paths;
 std::set<string> Input_token_stream::include_once;
 
 
-Input_token_stream::Input_token_stream(Tit & t, string f)
-    : is(&fis), file(f), line(1), pos(1), tit(t)
-{
-    if (!isfile(f))
-    {
+Input_token_stream::Input_token_stream(Tit &t, string f)
+        : is(&fis), file(f), line(1), pos(1), tit(t) {
+    if (!isfile(f)) {
         string ff;
-        for (auto i : include_paths)
-        {
+        for (const auto &i: include_paths) {
             ff = i + "/" + f;
-            if (isfile(ff))
-            {
+            if (isfile(ff)) {
                 f = ff;
                 break;
             }
@@ -35,25 +31,21 @@ Input_token_stream::Input_token_stream(Tit & t, string f)
 
     fis.open(f.c_str());
 
-    if (!fis)
-    {
+    if (!fis) {
         string e;
-        if (!include_paths.empty())
-        {
+        if (!include_paths.empty()) {
             e += "Tried paths:\n\t.\n";
-            for (auto i : include_paths)
+            for (auto i: include_paths)
                 e += "\t" + i + "\n";
         }
         throw e + "Cannot open [" + file + "] cwd=(" + cwd() + ")";
     }
 }
 
-bool Input_token_stream::read_symb(Token & t, char symb, Token::Typk typ)
-{
+bool Input_token_stream::read_symb(Token &t, char symb, Token::Typk typ) {
     char c = get_char();
 
-    if ( c != symb )
-    {
+    if (c != symb) {
         put_back(c);
         return false;
     }
@@ -63,14 +55,12 @@ bool Input_token_stream::read_symb(Token & t, char symb, Token::Typk typ)
     return true;
 }
 
-bool Input_token_stream::read_tok_chr(Token & t)
-{
+bool Input_token_stream::read_tok_chr(Token &t) {
     eat_spaces();
 
     char c = get_char();
 
-    if (c != '\'')
-    {
+    if (c != '\'') {
         put_back(c);
         return false;
     }
@@ -79,28 +69,25 @@ bool Input_token_stream::read_tok_chr(Token & t)
     t.s = string() + c;
     c = get_char();
 
-    if (c != '\'') throw Err("Bad char literal", line, pos - 1, cfi() );
+    if (c != '\'') throw Err("Bad char literal", line, pos - 1, cfi());
 
     t.typk = Token::tChr;
 
     return true;
 }
 
-bool Input_token_stream::read_tok_str(Token & t)
-{
+bool Input_token_stream::read_tok_str(Token &t) {
     eat_spaces();
 
     char c = get_char();
 
-    if (c != '\"')
-    {
+    if (c != '\"') {
         put_back(c);
         return false;
     }
 
     string s;
-    while (1)
-    {
+    while (1) {
         c = get_esc_char();
         if (c == '\"') break;
         s += c;
@@ -114,21 +101,18 @@ bool Input_token_stream::read_tok_str(Token & t)
     return true;
 }
 
-bool Input_token_stream::read_tok_num(Token & t)
-{
+bool Input_token_stream::read_tok_num(Token &t) {
     eat_spaces();
 
     char c = get_char();
 
-    if ( !std::isdigit(c) )
-    {
+    if (!std::isdigit(c)) {
         put_back(c);
         return false;
     }
 
     string s;
-    while ( std::isdigit(c) )
-    {
+    while (std::isdigit(c)) {
         s += c;
         c = get_char();
     }
@@ -141,17 +125,14 @@ bool Input_token_stream::read_tok_num(Token & t)
     return true;
 }
 
-void Input_token_stream::eat_spaces()
-{
+void Input_token_stream::eat_spaces() {
     const bool ES = false; // Eof is space
 
     char c = get_char();
 
-    while ( c == ' ' || c == '\t' || c == '\r'
-            || ( ES && c == '\n' ) || c == '#' )
-    {
+    while (c == ' ' || c == '\t' || c == '\r' || c == '#') {
         // comment
-        if ( c == '#' )
+        if (c == '#')
             while (c != '\n' && c) c = get_char();
 
         else // goto to the next byte
@@ -161,26 +142,25 @@ void Input_token_stream::eat_spaces()
     put_back(c);
 }
 
-char Input_token_stream::get_char()
-{
+char Input_token_stream::get_char() {
     char c;
 
-    if (USEBUF && !buf.empty() )
-    {
+    if (USEBUF && !buf.empty()) {
         c = buf.back();
         buf.pop_back();
-    }
-    else
+    } else
         is->get(c);
 
-    if ( !*is ) c = '\0';
+    if (!*is) c = '\0';
     ++pos;
-    if ( c == '\n' ) { line++; pos = 1; }
+    if (c == '\n') {
+        line++;
+        pos = 1;
+    }
     return c;
 }
 
-void Input_token_stream::put_back(char c)
-{
+void Input_token_stream::put_back(char c) {
     if (!*is) return;
 
     if (USEBUF)
@@ -189,21 +169,24 @@ void Input_token_stream::put_back(char c)
         is->putback(c);
 
     --pos;
-    if (c == '\n') { --line; pos = 1; }
+    if (c == '\n') {
+        --line;
+        pos = 1;
+    }
 }
 
-char Input_token_stream::get_esc_char()
-{
+char Input_token_stream::get_esc_char() {
     char c;
-    c = get_char(); if (!c) throw Err("End of file while reading string");
+    c = get_char();
+    if (!c) throw Err("End of file while reading string");
 
-    if (c != '\\')
-    {
-        if (c >= 32 || c <= 126) return c;
+    if (c != '\\') {
+        if (c >= 32 && c <= 126) return c;
         throw Err("Non printable char, use hex \\xXX", line, pos, cfi());
     }
 
-    c = get_char(); if (!c) throw Err("End of file while reading string");
+    c = get_char();
+    if (!c) throw Err("End of file while reading string");
 
     const char esca[] = "xabfnrtv\\\'\"\?";
     const char escc[] = "x\a\b\f\n\r\t\v\\\'\"\?";
@@ -211,7 +194,7 @@ char Input_token_stream::get_esc_char()
     static_assert(sizeof(esca) == sizeof(escc), "Escapce sequence");
 
     auto i = string(esca).find(c);
-    if ( i == string::npos )
+    if (i == string::npos)
         throw Err("Unknown escape sequence (" + print_char(c) + ")", line, pos - 1, cfi());
 
     if (c != 'x')
@@ -220,8 +203,8 @@ char Input_token_stream::get_esc_char()
     string h;
     h += get_char();
     h += get_char();
-    char * e = nullptr;
-    const char * ch = h.c_str();
+    char *e = nullptr;
+    const char *ch = h.c_str();
     long x = std::strtol(ch, &e, 16);
 
     if (e != ch + 2 || x < 0 || x > 255)
@@ -230,21 +213,18 @@ char Input_token_stream::get_esc_char()
     return char(x);
 }
 
-bool Input_token_stream::read_tok_id(Token & t)
-{
+bool Input_token_stream::read_tok_id(Token &t) {
     eat_spaces();
 
     char c = get_char();
 
-    if ( !std::isalpha(c) && c != '_' )
-    {
+    if (!std::isalpha(c) && c != '_') {
         put_back(c);
         return false;
     }
 
     string s;
-    while ( std::isalnum(c) || c == '_' )
-    {
+    while (std::isalnum(c) || c == '_') {
         s += c;
         c = get_char();
     }
@@ -257,14 +237,12 @@ bool Input_token_stream::read_tok_id(Token & t)
     return true;
 }
 
-bool Input_token_stream::read_tok_dotid(Token & t)
-{
+bool Input_token_stream::read_tok_dotid(Token &t) {
     eat_spaces();
 
     char c = get_char();
 
-    if ( c != '.' )
-    {
+    if (c != '.') {
         put_back(c);
         return false;
     }
@@ -272,14 +250,12 @@ bool Input_token_stream::read_tok_dotid(Token & t)
     char c2 = get_char();
     put_back(c2);
 
-    if ( !std::isalpha(c2) && c2 != '_' )
-    {
+    if (!std::isalpha(c2) && c2 != '_') {
         put_back(c);
         return false;
     }
 
-    if ( !read_tok_id(t) )
-    {
+    if (!read_tok_id(t)) {
         put_back(c);
         return false;
     }
@@ -287,42 +263,31 @@ bool Input_token_stream::read_tok_dotid(Token & t)
     return true;
 }
 
-bool Input_token_stream::read_directive(Token & t, Tokens & toks)
-{
-    if ( !read_tok_dotid(t) )
+bool Input_token_stream::read_directive(Token &t, Tokens &toks) {
+    if (!read_tok_dotid(t))
         return false;
 
-    if (t.s == "include")
-    {
-        try
-        {
+    if (t.s == "include") {
+        try {
             readon_include(toks);
             t.typk = Token::tIgn;
         }
-        catch (string e)
-        {
-            if ( file.empty() )
+        catch (string &e) {
+            if (file.empty())
                 throw Err(e, t);
 
             throw Err(e + ", file '" + file + "'", t);
         }
-    }
-
-    else if (t.s == "pragma")
-    {
-        if (!toks.empty())
-        {
-            for ( auto i : toks )
+    } else if (t.s == "pragma") {
+        if (!toks.empty()) {
+            for (auto i: toks)
                 if (!i.is(Token::tEol))
                     throw Err("Pragma must be declared at the top", t);
         }
 
         t.s = readon_pragma();
         t.typk = Token::tIgn;
-    }
-
-    else
-    {
+    } else {
         t.typk = Token::tMac;
     }
 
@@ -330,13 +295,11 @@ bool Input_token_stream::read_directive(Token & t, Tokens & toks)
     return true;
 }
 
-string Input_token_stream::readon_pragma()
-{
+string Input_token_stream::readon_pragma() {
     char c = '\0';
     bool st = true;
     string r;
-    while (is)
-    {
+    while (is) {
         c = get_char();
         if (c == '\n') break;
 
@@ -344,18 +307,16 @@ string Input_token_stream::readon_pragma()
             continue;
 
         st = true;
-        if ( c != '\r' ) r += c;
+        if (c != '\r') r += c;
     }
 
     return r;
 }
 
-Tokens Input_token_stream::tokenize()
-{
+Tokens Input_token_stream::tokenize() {
     Tokens r;
 
-    while (!!*is)
-    {
+    while (!!*is) {
         eat_spaces();
 
         Token t(line, pos);
@@ -389,16 +350,14 @@ Tokens Input_token_stream::tokenize()
         else if (read_tok_dol(t)) {}
         else if (read_tok_cma(t)) {}
 
-        if ( t.typk == Token::tNull )
-        {
+        if (t.typk == Token::tNull) {
             string sc = print_char(get_char());
             throw Err(string() + "Bad token '" + sc + "'", line, pos, cfi());
         }
 
-        if ( t.typk != Token::tIgn )
+        if (t.typk != Token::tIgn)
             r.push_back(t);
-        else if (t.s == "once")
-        {
+        else if (t.s == "once") {
             if (include_once.find(file) == include_once.end())
                 include_once.insert(file);
             else
@@ -411,8 +370,7 @@ Tokens Input_token_stream::tokenize()
 
     Token t = r[r.size() - 1];
 
-    if (!t.is(Token::tEof))
-    {
+    if (!t.is(Token::tEof)) {
         r.push_back(Token(t, Token::tEol));
         r.push_back(Token(t, Token::tEof));
     }
@@ -420,8 +378,7 @@ Tokens Input_token_stream::tokenize()
     return r;
 }
 
-void Input_token_stream::readon_include(Tokens & toks)
-{
+void Input_token_stream::readon_include(Tokens &toks) {
     string func = "asis";
     string file;
 
@@ -430,8 +387,7 @@ void Input_token_stream::readon_include(Tokens & toks)
     if (read_tok_str(t))
         file = t.s;
 
-    else
-    {
+    else {
         if (!read_tok_id(t))
             throw Err("Expecting include method or \"filename\"", t);
 
@@ -455,7 +411,7 @@ void Input_token_stream::readon_include(Tokens & toks)
 
     Tokens inc = in.tokenize();
 
-    for (auto & j : inc)
+    for (auto &j: inc)
         if (!j.file_idx)
             j.file_idx = include_files.size();
 
@@ -468,45 +424,39 @@ void Input_token_stream::readon_include(Tokens & toks)
     if (inc.empty())
         return;
 
-    auto & tif = tit(func);
+    auto &tif = tit(func);
 
     Tokens ts = tif.prefx(file, inc[0]);
-    for (auto j : ts) toks.push_back(j);
+    for (const auto &j: ts) toks.push_back(j);
 
-    for (auto i : inc)
-    {
+    for (const auto &i: inc) {
         ts = tif(i);
-        for ( auto j : ts)
+        for (const auto &j: ts)
             toks.push_back(j);
     }
 
     ts = tif.pstfx();
 
-    for (auto j : ts)
+    for (const auto &j: ts)
         toks.push_back(j);
 }
 
-Tokens TokenTranslatorDatax::operator()(Token t)
-{
+Tokens TokenTranslatorDatax::operator()(Token t) {
     Tokens toks;
 
     t.line = start.line; // putting on the same line
 
-    if (0) {}
-    else if ( t.is(Token::tEol)) {}
-    else if ( t.is(Token::tEof)) {}
-    else if (t.is(Token::tNum))
-    {
+    if (t.is(Token::tEol)) {}
+    else if (t.is(Token::tEof)) {}
+    else if (t.is(Token::tNum)) {
         Cell y(t.un, Cell::X);
         auto yts = y.ts();
         toks.push_back(Token(t, yts.t));
-        if ( !yts.s.iszero() )
-        {
+        if (!yts.s.iszero()) {
             toks.push_back(Token(t, Token::tDot));
             toks.push_back(Token(t, yts.s));
         }
-    }
-    else
+    } else
         throw Err("Unexpected token in file '" + file + "'", t);
 
     return toks;

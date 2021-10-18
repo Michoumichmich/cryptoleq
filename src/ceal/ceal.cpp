@@ -60,26 +60,23 @@ String and char literal escapes: \a \b \f \n \r \t \v \\ \' \" \? \xhh
 using std::cout;
 using std::string;
 
-void tmain(int ac, const char * av[]);
+void tmain(int ac, const char *av[]);
 
-int main(int ac, const char * av[])
-try
-{
+int main(int ac, const char *av[])
+try {
     try { tmain(ac, av); }
     catch (string e) { throw; }
-    catch (char const * e) { throw string(e); }
+    catch (char const *e) { throw string(e); }
     catch (Err e) { throw e.str(); }
     catch (...) { throw string("unknown"); }
 }
-catch (string e)
-{
+catch (string e) {
     cout << "Error: " << e << '\n';
 }
 
-void usage()
-{
+void usage() {
     std::cout << "Cryptoleq Enhanced Assembler v"
-              CRYPTOLEQVERSION "." << SUBVERSION <<
+                 CRYPTOLEQVERSION "." << SUBVERSION <<
               ", Oleg Mazonka 2015\n";
 
     cout << "Compiled with: Cell=" << CellName << ", Memory=" << MemName
@@ -104,9 +101,12 @@ void usage()
     cout << "\t-m expr  \trun mmcalc; expr optional, file name or expression \n";
 }
 
-void tmain(int ac, const char * av[])
-{
-    if ( ac < 2 ) { void usage(); usage(); return; }
+void tmain(int ac, const char *av[]) {
+    if (ac < 2) {
+        void usage();
+        usage();
+        return;
+    }
 
     Context ctx;
     ctx.init_clo(ac, av);
@@ -124,8 +124,7 @@ void tmain(int ac, const char * av[])
     if (data.empty())
         throw "Cannot read file " + ctx.input_file;
 
-    if ( ctx.do_translate )
-    {
+    if (ctx.do_translate) {
         {
             std::istringstream is(data);
             pgm.load_dot_input(is);
@@ -135,43 +134,40 @@ void tmain(int ac, const char * av[])
 
         Compiler comp;
         {
-            const Pragma & g = pgm;
+            const Pragma &g = pgm;
 
             Unumber r = make_unumber(ctx.clo_seed, 0);
-            if ( r.iszero() ) r = g.R();
+            if (r.iszero()) r = g.R();
 
             comp.init_pqkru(g.N(), g.P(), g.Q(), g.K(), r, g.U());
 
             if (g.beta())
                 comp.proc.setB2Beta(g.beta());
 
-            if ( !g.snk.empty() )
+            if (!g.snk.empty())
                 comp.sneak = Unumber(g.snk, Unumber::Decimal);
 
-            for ( auto i : g.include_paths)
+            for (auto i: g.include_paths)
                 Input_token_stream::include_paths.push_back(i);
         }
 
         Cell::setN(comp.proc.N);
         ctx.setcompiler(comp);
 
-        if ( ctx.bshow )
-        {
+        if (ctx.bshow) {
             ctx.show();
             comp.show();
             return;
         }
 
-        if ( ctx.bcrypt )
-        {
+        if (ctx.bcrypt) {
             ctx.crypt();
             return;
         }
 
         auto token_stream = ctx.tokenize(data);
 
-        if ( ctx.preproc )
-        {
+        if (ctx.preproc) {
             cout << ctx.write(token_stream, pgm);
             return;
         }
@@ -186,8 +182,7 @@ void tmain(int ac, const char * av[])
         data = ctx.write(out_stream, pgm);
     }
 
-    if (!ctx.do_emulate)
-    {
+    if (!ctx.do_emulate) {
         ctx.save(data);
         ctx.stat.output_e();
         return;
@@ -209,16 +204,15 @@ void tmain(int ac, const char * av[])
 
         emu.io_type = pgm.io;
 
-        if ( !ctx.separator.empty() )
+        if (!ctx.separator.empty())
             emu.sep_ts = emu.sep_x = char(std::atoi(ctx.separator.c_str()));
 
         if (!pgm.entry.empty())
             emu.entry = str2ts(pgm.entry);
 
-        Stat * stat = nullptr;
+        Stat *stat = nullptr;
 
-        if ( !ctx.stat.filename.empty() )
-        {
+        if (!ctx.stat.filename.empty()) {
             stat = &ctx.stat;
             stat->addrinit(); // in case no compilation
         }

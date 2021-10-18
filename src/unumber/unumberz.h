@@ -13,92 +13,130 @@
 
 using std::string;
 
-class Unumber
-{
-        mpz_class z;
-        void neg();
-        void pos();
+class Unumber {
+    mpz_class z;
 
-        static const int MOD_POWER = 4096;
-        static Unumber MOD_VALUE;
-        static void init_mod_value();
+    void neg();
 
-    public:
-        Unumber(unsigned long long x);
-        Unumber();
+    void pos();
 
-        enum StringType { Binary, Decimal };
-        Unumber(const string & s, StringType st);
+    static const int MOD_POWER = 4096;
+    static Unumber MOD_VALUE;
 
-        void init10(const char * s);
-        void initBin(const string & s);
+    static void init_mod_value();
 
-        void operator-=(const Unumber & n);
-        void operator+=(const Unumber & n);
-        void operator*=(const Unumber & n);
-        void operator%=(const Unumber & n);
-        void operator/=(const Unumber & n);
+public:
+    Unumber(unsigned long long x);
 
-        void setbit1(int b);
-        unsigned getbit(int b) const;
+    Unumber();
 
-        void pow(Unumber e, const Unumber & mod);
+    enum StringType {
+        Binary, Decimal
+    };
 
-        Unumber div(const Unumber & d, Unumber & q) const;
+    Unumber(const string &s, StringType st);
 
-        Unumber mul(const Unumber & b, const Unumber & m) const;
+    void init10(const char *s);
 
-        void divABRQ(const Unumber & d, Unumber * r, Unumber * q) const;
+    void initBin(const string &s);
 
-        bool iszero() const;
+    void operator-=(const Unumber &n);
 
-        Unumber & operator++();
-        Unumber & operator--();
+    void operator+=(const Unumber &n);
 
-        void operator<<=(int b);
-        void operator>>=(int b);
+    void operator*=(const Unumber &n);
 
-        friend Unumber operator-(const Unumber & n1, const Unumber & n2)
-        { Unumber r(n1); r -= n2; return r; }
+    void operator%=(const Unumber &n);
 
-        friend Unumber operator*(const Unumber & n1, const Unumber & n2)
-        { Unumber r(n1); r *= n2; return r; }
+    void operator/=(const Unumber &n);
 
-        friend Unumber operator+(const Unumber & n1, const Unumber & n2)
-        { Unumber r(n1); r += n2; return r; }
+    void setbit1(int b);
 
-        friend Unumber operator%(const Unumber & n1, const Unumber & n2)
-        { Unumber r(n1); r %= n2; return r; }
+    unsigned getbit(int b) const;
 
-        friend Unumber operator/(const Unumber & n1, const Unumber & n2)
-        { Unumber r(n1); r /= n2; return r; }
+    void pow(Unumber e, const Unumber &mod);
 
-        friend bool operator<(const Unumber & n1, const Unumber & n2);
+    Unumber div(const Unumber &d, Unumber &q) const;
 
-        friend bool operator>(const Unumber & n1, const Unumber & n2) { return n2 < n1; }
+    Unumber mul(const Unumber &b, const Unumber &m) const;
 
-        friend bool operator!=(const Unumber & n1, const Unumber & n2)
-        { return !(n1 == n2); }
+    void divABRQ(const Unumber &d, Unumber *r, Unumber *q) const;
 
-        friend bool operator==(const Unumber & n1, const Unumber & n2)
-        { return n1.z == n2.z; }
+    bool iszero() const;
 
-        void swap(Unumber & n) { mpz_class t = z; z=n.z; n.z=t; }
+    Unumber &operator++();
 
-        string str(unsigned base=10) const;
-        unsigned long long to_ull() const;
+    Unumber &operator--();
 
-        friend std::ostream & operator<<(std::ostream & os, const Unumber & n)
-        { return (os << n.str()); }
+    void operator<<=(int b);
 
-        friend std::istream & operator>>(std::istream & os, Unumber & n);
+    void operator>>=(int b);
 
-        string raw(unsigned sz) const;
+    friend Unumber operator-(const Unumber &n1, const Unumber &n2) {
+        Unumber r(n1);
+        r -= n2;
+        return r;
+    }
+
+    friend Unumber operator*(const Unumber &n1, const Unumber &n2) {
+        Unumber r(n1);
+        r *= n2;
+        return r;
+    }
+
+    friend Unumber operator+(const Unumber &n1, const Unumber &n2) {
+        Unumber r(n1);
+        r += n2;
+        return r;
+    }
+
+    friend Unumber operator%(const Unumber &n1, const Unumber &n2) {
+        Unumber r(n1);
+        r %= n2;
+        return r;
+    }
+
+    friend Unumber operator/(const Unumber &n1, const Unumber &n2) {
+        Unumber r(n1);
+        r /= n2;
+        return r;
+    }
+
+    friend bool operator<(const Unumber &n1, const Unumber &n2);
+
+    friend bool operator>(const Unumber &n1, const Unumber &n2) { return n2 < n1; }
+
+    friend bool operator!=(const Unumber &n1, const Unumber &n2) { return !(n1 == n2); }
+
+    friend bool operator==(const Unumber &n1, const Unumber &n2) { return n1.z == n2.z; }
+
+    void swap(Unumber &n) {
+        mpz_class t = z;
+        z = n.z;
+        n.z = t;
+    }
+
+    string str(unsigned base = 10) const;
+
+    unsigned long long to_ull() const;
+
+    friend std::ostream &operator<<(std::ostream &os, const Unumber &n) { return (os << n.str()); }
+
+    friend std::istream &operator>>(std::istream &os, Unumber &n);
+
+    string raw(unsigned sz) const;
 };
 
 
-inline Unumber operator>>(Unumber a, unsigned b) { a >>= b; return a; }
-inline Unumber operator<<(Unumber a, unsigned b) { a <<= b; return a; }
+inline Unumber operator>>(Unumber a, unsigned b) {
+    a >>= b;
+    return a;
+}
+
+inline Unumber operator<<(Unumber a, unsigned b) {
+    a <<= b;
+    return a;
+}
 
 #endif
 

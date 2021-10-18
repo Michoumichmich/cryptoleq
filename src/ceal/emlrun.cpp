@@ -26,23 +26,20 @@ unsigned g_line_number = 1;
 
 string pragmaClo;
 
-void tmain(int ac, const char * av[]);
+void tmain(int ac, const char *av[]);
 
-int main(int ac, const char * av[])
-try
-{
+int main(int ac, const char *av[])
+try {
     try { tmain(ac, av); }
     catch (string e) { throw; }
-    catch (char const * e) { throw string(e); }
+    catch (char const *e) { throw string(e); }
     catch (...) { throw string("unknown"); }
 }
-catch (string e)
-{
+catch (string e) {
     cout << "Error (sqcrun) " << "(" << g_line_number << ") : " << e << '\n';
 }
 
-void usage()
-{
+void usage() {
     cout << "Usage: sqcrun [options] input.sqc\n";
     cout << "\t-\tinput from stdin (no input file)\n";
     cout << "\t-i type\tinput/output type\n";
@@ -55,9 +52,12 @@ void usage()
     cout << "\t-n\tcount number of instructions\n";
 }
 
-void tmain(int ac, const char * av[])
-{
-    if ( ac < 2 ) { void usage(); usage(); return; }
+void tmain(int ac, const char *av[]) {
+    if (ac < 2) {
+        void usage();
+        usage();
+        return;
+    }
 
     string file;
     bool bcin = false;
@@ -65,40 +65,35 @@ void tmain(int ac, const char * av[])
 
     Emulator emu;
 
-    try
-    {
+    try {
 
-        for (int i = 1; i < ac; i++)
-        {
-            if (av[i][0] != '-') { file = av[i]; continue; }
+        for (int i = 1; i < ac; i++) {
+            if (av[i][0] != '-') {
+                file = av[i];
+                continue;
+            }
 
             string s = av[i];
             if (s.size() == 1) bcin = true;
-            else if (s.size() == 2)
-            {
+            else if (s.size() == 2) {
                 if (s[1] == 's') show_proc = true;
                 if (s[1] == 'n') emu.steps = true;
                 if (s[1] == 't') emu.trace = true;
                 if (s[1] == 'p' && ++i < ac) pragmaClo = av[i];
-                if (s[1] == 'i' && ++i < ac)
-                {
+                if (s[1] == 'i' && ++i < ac) {
                     emu.io_type = Pragma::str2io(av[i]);
                     iosetbyclo = true;
                 }
-            }
-            else
+            } else
                 throw "Unknown option [" + s + "]";
         }
 
         Pragma pgm("cryptoleq", "0.6");
 
-        if (bcin)
-        {
+        if (bcin) {
             emu.current_input_stream = &std::cin;
             emu.mkmem_stream(pgm, pragmaClo);
-        }
-        else
-        {
+        } else {
             std::ifstream in(file.c_str());
             if (!in) throw "Cannot open '" + file + "' cwd=(" + cwd() + ")";
             emu.current_input_stream = &in;
@@ -108,8 +103,7 @@ void tmain(int ac, const char * av[])
         ProcessorTS proc(pgm.N());
         Cell::setN(proc.N);
 
-        if (show_proc)
-        {
+        if (show_proc) {
             proc.show();
             return;
         }
@@ -119,8 +113,7 @@ void tmain(int ac, const char * av[])
 
         emu.run(proc, nullptr);
     }
-    catch (...)
-    {
+    catch (...) {
         g_line_number = emu.line_number;
         throw;
     }

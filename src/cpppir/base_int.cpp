@@ -15,24 +15,21 @@
 //**********************************************************************************
 // definitions
 
-template <Compiler & M>
-base_int<M> & base_int<M>::operator-=(const base_int<M> & A)
-{
+template<Compiler &M>
+base_int<M> &base_int<M>::operator-=(const base_int<M> &A) {
     BAm1(A);
     return *this;
 }
 
-template <Compiler & M>
-base_int<M> & base_int<M>::operator+=(const base_int<M> & y)
-{
+template<Compiler &M>
+base_int<M> &base_int<M>::operator+=(const base_int<M> &y) {
     base_int<M> Am1;
     Am1.BAm1(y);
     return *this -= Am1;
 }
 
-template <Compiler & M>
-void base_int<M>::BAm1(const base_int & A)
-{
+template<Compiler &M>
+void base_int<M>::BAm1(const base_int &A) {
     ts = M.proc.BAm1(A.ts, ts);
 }
 
@@ -47,6 +44,7 @@ void base_int<M>::BAm1(const base_int & A)
 //**********************************************************************************
 // instantiation
 
-template class base_int<compiler>;
+template
+class base_int<compiler>;
 
 // end of instantiation

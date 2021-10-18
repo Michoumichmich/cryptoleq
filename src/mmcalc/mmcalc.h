@@ -8,10 +8,11 @@
 
 #include "../unumber/unumberg.h"
 
-namespace mmc
-{
-extern bool interactive;
-extern std::istream * gin;
-void mmcf();
-bool isPrime(const Unumber & n);
+namespace mmc {
+    extern bool interactive;
+    extern std::istream *gin;
+
+    void mmcf();
+
+    bool isPrime(const Unumber &n);
 } //mmc

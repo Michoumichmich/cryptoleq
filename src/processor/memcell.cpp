@@ -9,13 +9,12 @@
 Unumber CellCommon::N = 0;
 Unumber CellCommon::N2 = 0;
 
-namespace ma {bool invert(const Unumber & x, const Unumber & mod, Unumber * xm1);}
-namespace ma {Unumber gcd(const Unumber & x, const Unumber & y);}
+namespace ma { bool invert(const Unumber &x, const Unumber &mod, Unumber *xm1); }
+namespace ma { Unumber gcd(const Unumber &x, const Unumber &y); }
 
 // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = //
 
-bool CellCommon::inv(const Unumber & x, const Unumber & n, Unumber * xm1)
-{
+bool CellCommon::inv(const Unumber &x, const Unumber &n, Unumber *xm1) {
     if (!n.iszero())
         return ma::invert(x, n, xm1);
 
@@ -23,8 +22,7 @@ bool CellCommon::inv(const Unumber & x, const Unumber & n, Unumber * xm1)
     return true;
 }
 
-Unumber CellCommon::inv(const Unumber & x, const Unumber & n)
-{
+Unumber CellCommon::inv(const Unumber &x, const Unumber &n) {
     Unumber r;
     bool k = inv(x, n, &r);
 
@@ -34,10 +32,8 @@ Unumber CellCommon::inv(const Unumber & x, const Unumber & n)
     return r;
 }
 
-Unumber CellCommon::toX(Unumber t, Unumber s)
-{
-    if (N.iszero())
-    {
+Unumber CellCommon::toX(Unumber t, Unumber s) {
+    if (N.iszero()) {
         static Unumber fakeN = fake();
         return t + fakeN * s + 1;
     }
@@ -45,12 +41,10 @@ Unumber CellCommon::toX(Unumber t, Unumber s)
     return N * t + s + 1;
 }
 
-Unumber CellCommon::fake()
-{
+Unumber CellCommon::fake() {
     Unumber m1 = Unumber(0) - 1;
     int k = 0;
-    while (!m1.iszero())
-    {
+    while (!m1.iszero()) {
         k++;
         m1 >>= 1;
     }
@@ -62,8 +56,7 @@ Unumber CellCommon::fake()
 
 // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = //
 
-CellTs CellTs::fromX(Unumber x)
-{
+CellTs CellTs::fromX(Unumber x) {
     if (N.iszero()) // 0 is valid -1 value
     {
         static Unumber fN = fake();
@@ -82,48 +75,41 @@ CellTs CellTs::fromX(Unumber x)
     return CellTs(x / N, x % N);
 }
 
-string CellTs::str() const
-{
+string CellTs::str() const {
     return v.t.str() + (v.s.iszero() ? "" : "." + v.s.str());
 }
 
 // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = //
 
-string CellX::str() const
-{
+string CellX::str() const {
     auto v = ts();
     return v.t.str() + (v.s.iszero() ? "" : "." + v.s.str());
 }
 
-CellCommon::TsVal CellX::ts() const
-{
+CellCommon::TsVal CellX::ts() const {
     Unumber x(z);
     x -= 1;
 
     Unumber t, s;
 
-    if (N.iszero())
-    {
+    if (N.iszero()) {
         static Unumber fakeN = fake();
         Unumber negx = Unumber(0) - x;
 
-        if ( !(negx < x) )
+        if (!(negx < x))
             t = x.div(fakeN, s);
-        else
-        {
+        else {
             t = negx.div(fakeN, s);
             t = Unumber(0) - t;
         }
-    }
-    else
+    } else
         s = x.div(N, t);
 
     return TsVal(t, s);
 }
 
-Cell minusone_calc()
-{
-    const Unumber & N = CellCommon::getN();
+Cell minusone_calc() {
+    const Unumber &N = CellCommon::getN();
     Unumber m1u;
     if (N != 0)
         m1u = N - 1;
@@ -133,8 +119,7 @@ Cell minusone_calc()
     return Cell(m1u, Cell::TS);
 }
 
-Cell minusone()
-{
+Cell minusone() {
     static Cell m1 = minusone_calc();
     return m1;
 }

@@ -12,30 +12,32 @@
 
 #include "../processor/compiler.h"
 
-template <Compiler & M>
-class base_int
-{
-    protected:
-        Cell ts;
+template<Compiler &M>
+class base_int {
+protected:
+    Cell ts;
 
-    protected:
-        void BAm1(const base_int & A);
+protected:
+    void BAm1(const base_int &A);
 
-        base_int() {} // ts is set to 0.0
+    base_int() {} // ts is set to 0.0
 
-        static Unumber congruenceN(Unumber ix) { return M.congruenceN(ix); }
-        static Unumber congruenceN2(Unumber x) { return M.congruenceN2(x); }
+    static Unumber congruenceN(Unumber ix) { return M.congruenceN(ix); }
 
-        base_int<M> & operator+=(const base_int<M> & y);
-        base_int<M> & operator-=(const base_int<M> & y);
+    static Unumber congruenceN2(Unumber x) { return M.congruenceN2(x); }
 
-    public:
-        bool gt0() const { return !M.proc.leq(ts); }
+    base_int<M> &operator+=(const base_int<M> &y);
 
-        Unumber X() const { return ts.x(); }
+    base_int<M> &operator-=(const base_int<M> &y);
 
-        std::string str() const { return X().str(); }
-        std::string show() const { throw "base_int show"; }
+public:
+    bool gt0() const { return !M.proc.leq(ts); }
+
+    Unumber X() const { return ts.x(); }
+
+    std::string str() const { return X().str(); }
+
+    std::string show() const { throw "base_int show"; }
 };
 
 extern Compiler compiler;

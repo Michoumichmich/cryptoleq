@@ -14,43 +14,36 @@
 int Macros::unique_counter = 0;
 
 
-void Macros::build_id_table(Pnode n)
-{
-    Idn * id = get<Idn>(NOTHR, n);
-    if (id)
-    {
+void Macros::build_id_table(Pnode n) {
+    Idn *id = get<Idn>(NOTHR, n);
+    if (id) {
         // if the parent is function, then ignore the name
         bool ignore = false;
         {
-            Term * par = dynamic_cast<Term *>(id->parent);
+            Term *par = dynamic_cast<Term *>(id->parent);
             if (par && par->typ == Term::eFunc)
                 ignore = true;
         }
 
-        if (!ignore)
-        {
+        if (!ignore) {
             macdef_instance->undefs.insert(id->s);
             macdef_instance->iduse[id->s].push_back(n);
         }
-    }
-    else
-        for (auto i : n->children)
+    } else
+        for (auto i: n->children)
             build_id_table(i);
 }
 
-void Macros::build_id_table(Idn & d, Pnode n)
-{
+void Macros::build_id_table(Idn &d, Pnode n) {
     if (macdef_instance->idxGlobal(d.s) < 0)
         macdef_instance->locdefs[d.s] = n;
     else
         macdef_instance->entries.insert(d.s);
 }
 
-void Macros::build_id_table(Labels & l)
-{
-    for (auto i : l.children)
-    {
-        Idn * id = get<Idn>(NOTHR, i);
+void Macros::build_id_table(Labels &l) {
+    for (auto i: l.children) {
+        Idn *id = get<Idn>(NOTHR, i);
         if (!id) // address definition in macro - suspicious - maybe warning is necessary
             continue;
 
@@ -58,29 +51,23 @@ void Macros::build_id_table(Labels & l)
     }
 }
 
-void Macros::build_id_table(Instruction & i)
-{
-    for (auto pli : i.children)
-    {
-        Litem * li = get<Litem>(LNFUN, pli);
+void Macros::build_id_table(Instruction &i) {
+    for (auto pli: i.children) {
+        Litem *li = get<Litem>(LNFUN, pli);
         if (li->children.size() != 2) throw Err(LNFUN);
 
-        if ( li->typ == Litem::eDef)
-        {
+        if (li->typ == Litem::eDef) {
             Pnode nid = li->children[1];
-            Idn * id = get<Idn>(LNFUN, nid);
+            Idn *id = get<Idn>(LNFUN, nid);
             build_id_table(*id, nid);
-        }
-        else
-        {
-            Labels * labs = get<Labels>(LNFUN, li->children[1]);
+        } else {
+            Labels *labs = get<Labels>(LNFUN, li->children[1]);
             build_id_table(*labs);
 
-            Item * itm = get<Item>(LNFUN, li->children[0]);
-            if (itm->typ == Item::eId)
-            {
+            Item *itm = get<Item>(LNFUN, li->children[0]);
+            if (itm->typ == Item::eId) {
                 Pnode nid = itm->children[0];
-                Idn * id = get<Idn>(LNFUN, nid);
+                Idn *id = get<Idn>(LNFUN, nid);
                 build_id_table(*id, nid);
             }
         }
@@ -89,11 +76,10 @@ void Macros::build_id_table(Instruction & i)
     }
 }
 
-void Macros::build_id_table(Macuse & u)
-{
+void Macros::build_id_table(Macuse &u) {
     if (u.children.empty()) throw Err(LNFUN);
 
-    Labels * labs = get<Labels>(LNFUN, u.children[0]);
+    Labels *labs = get<Labels>(LNFUN, u.children[0]);
     build_id_table(*labs);
 
     auto sz = u.children.size();
@@ -102,8 +88,7 @@ void Macros::build_id_table(Macuse & u)
         build_id_table(u.children[i]);
 }
 
-void Macros::instantiate(Macdef & md, Macuse & mu)
-{
+void Macros::instantiate(Macdef &md, Macuse &mu) {
     // first setup argvals
     md.argvals = mu.children;
     md.prelabs = md.argvals.front();
@@ -118,11 +103,10 @@ void Macros::instantiate(Macdef & md, Macuse & mu)
     // enter recursive processing
     macdef_instance = &md;
 
-    for (auto i : md.children)
-    {
-        if (Instruction * pi = get<Instruction>(NOTHR, i))
+    for (auto i: md.children) {
+        if (Instruction *pi = get<Instruction>(NOTHR, i))
             build_id_table(*pi);
-        else if (Macuse * pm = get<Macuse>(NOTHR, i))
+        else if (Macuse *pm = get<Macuse>(NOTHR, i))
             build_id_table(*pm);
         else
             throw Err(LNFUN);
@@ -139,24 +123,22 @@ void Macros::instantiate(Macdef & md, Macuse & mu)
     // check that local defines are used
     const bool STRICT_LOCAL_DEFS = true;
     if (STRICT_LOCAL_DEFS)
-        for (auto i : md.locdefs)
+        for (auto i: md.locdefs)
             if (md.undefs.find(i.first) == md.undefs.end())
                 throw Err("Local defined but unused", i.second->tok());
 
     // check that global defines are used or are actually defined in macro
     const bool STRICT_GLOBAL_DEFS = true;
     if (STRICT_GLOBAL_DEFS)
-        for (auto i : md.globals)
-        {
+        for (auto i: md.globals) {
             string name = get<Idn>(LNFUN, i)->s;
             if (md.undefs.find(name) == md.undefs.end()
-                    && md.entries.find(name) == md.entries.end())
+                && md.entries.find(name) == md.entries.end())
                 throw Err("Global unused", i->tok());
         }
 
     // now process all undefs
-    for (auto name : md.undefs)
-    {
+    for (auto name: md.undefs) {
         if (md.idxGlobal(name) >= 0)
             continue;
 
@@ -177,21 +159,19 @@ void Macros::instantiate(Macdef & md, Macuse & mu)
         throw Err("Label on empty macro", mu.tok(), md.tok());
 
     Pnode first = md.children[0];
-    Macuse * imu = get<Macuse>(NOTHR, first);
+    Macuse *imu = get<Macuse>(NOTHR, first);
     Pnode labs = first->children[0];
     if (imu) {}
-    else if (get<Instruction>(LNFUN, first))
-    {
-        Litem * lit = get<Litem>(LNFUN, labs);
+    else if (get<Instruction>(LNFUN, first)) {
+        Litem *lit = get<Litem>(LNFUN, labs);
         labs = lit->children[1];
     }
 
-    for (auto i : md.prelabs->children)
+    for (auto i: md.prelabs->children)
         labs->addChild(i);
 }
 
-Nodes Macros::process_macuse(Macuse & mu)
-{
+Nodes Macros::process_macuse(Macuse &mu) {
     // make clone, resolve names, extract instructions
 
     string macname = mu.name();
@@ -199,8 +179,7 @@ Nodes Macros::process_macuse(Macuse & mu)
     if (mu.name() == "_table")
         return Confinement(root, mu).table();
 
-    if (mu.name() == "_autobits")
-    {
+    if (mu.name() == "_autobits") {
         Autobits ab(root, mu);
         process_autobits(mu, ab);
         macname = ab.name();
@@ -211,24 +190,21 @@ Nodes Macros::process_macuse(Macuse & mu)
         throw Err("Macro [" + macname + "] is not defined", mu.tok());
 
     Pnode clone = macdef->clone();
-    Macdef * pm = get<Macdef>(LNFUN, clone);
+    Macdef *pm = get<Macdef>(LNFUN, clone);
     instantiate(*pm, mu);
 
     return pm->children;
 }
 
-void Macros::instance_process_args(const string & name, int idx)
-{
+void Macros::instance_process_args(const string &name, int idx) {
     Pnode pval = macdef_instance->argvals[idx];
 
-    const Nodes & usage = macdef_instance->iduse[name];
-    for (auto i : usage)
-    {
+    const Nodes &usage = macdef_instance->iduse[name];
+    for (auto i: usage) {
         // i is id
-        Node * parent = i->parent;
+        Node *parent = i->parent;
         //find in parent references to this id
-        for (auto & j : parent->children)
-        {
+        for (auto &j: parent->children) {
             if (j.get() != i.get())
                 continue;
 
@@ -236,17 +212,16 @@ void Macros::instance_process_args(const string & name, int idx)
             j = pval;
             j->parent = parent;
 
-            if (Item * itm = dynamic_cast<Item *>(parent))
-            {
+            if (Item *itm = dynamic_cast<Item *>(parent)) {
                 if (itm->typ != Item::eId) throw Err(LNFUN);
                 throw Err("Parameter names in array definitions, use [(...)]", i->tok());
             }
 
             // now change parents type
-            Term * term = dynamic_cast<Term *>(parent);
+            Term *term = dynamic_cast<Term *>(parent);
             if (!term) throw Err(LNFUN);
             // pval is either Idn or Expr
-            Idn * idn = get<Idn>(NOTHR, pval);
+            Idn *idn = get<Idn>(NOTHR, pval);
 
             if (idn)
                 continue; // all good term should be eId
@@ -257,19 +232,17 @@ void Macros::instance_process_args(const string & name, int idx)
     }
 }
 
-string Macros::unique_name()
-{
+string Macros::unique_name() {
     std::ostringstream os;
     os << ++unique_counter;
     return os.str();
 }
 
-void Macros::instance_process_locs(const string & name)
-{
+void Macros::instance_process_locs(const string &name) {
     // if not locdefs - error
-    Macdef & m = *macdef_instance;
+    Macdef &m = *macdef_instance;
     auto i = m.locdefs.find(name);
-    const Nodes & usage = m.iduse[name];
+    const Nodes &usage = m.iduse[name];
 
     if (usage.empty())
         throw Err(LNFUN);
@@ -280,23 +253,20 @@ void Macros::instance_process_locs(const string & name)
     string newname = name + "@" + unique_name();
 
     // change name in def
-    Idn * idn = get<Idn>(LNFUN, i->second);
+    Idn *idn = get<Idn>(LNFUN, i->second);
     idn->s = newname;
 
-    for (auto j : usage)
-    {
-        Idn * idn = get<Idn>(LNFUN, j);
+    for (auto j: usage) {
+        Idn *idn = get<Idn>(LNFUN, j);
         idn->s = newname;
     }
 }
 
-string Autobits::gen_name(Unumber n, string b0, string b1)
-{
+string Autobits::gen_name(Unumber n, string b0, string b1) {
     return "_ab@" + n.str() + "@" + b0 + "@" + b1;
 }
 
-string Autobits::gen_name(Macuse & mu)
-{
+string Autobits::gen_name(Macuse &mu) {
     Unumber v = val(mu);
     if (mu.children.size() != 4) throw Err(LNFUN);
     string bit0 = getid(mu.children[2]);
@@ -304,24 +274,21 @@ string Autobits::gen_name(Macuse & mu)
     return gen_name(v, bit0, bit1);
 }
 
-Unumber Autobits::val(Macuse & mu)
-{
+Unumber Autobits::val(Macuse &mu) {
     if (mu.children.size() != 4)
         throw Err("Macro _autobits require 3 arguments", mu.tok());
 
-    Expr * ex = get<Expr>(LNFUN, mu.children[1]);
+    Expr *ex = get<Expr>(LNFUN, mu.children[1]);
     Cell ts;
-    try
-    {
+    try {
         ts = ex->val();
     }
-    catch (Err e)
-    {
+    catch (Err e) {
         throw Err(e.str() + " - autobits expect constant expression");
     }
 
-    const Unumber & N = root->comp->proc.N;
-    if ( !N.iszero() )
+    const Unumber &N = root->comp->proc.N;
+    if (!N.iszero())
         return ts.x();
 
     auto tsts = ts.ts();
@@ -331,38 +298,35 @@ Unumber Autobits::val(Macuse & mu)
     return tsts.t;
 }
 
-string Autobits::getid(Pnode n)
-{
-    Expr * ex = get<Expr>(LNFUN, n);
+string Autobits::getid(Pnode n) {
+    Expr *ex = get<Expr>(LNFUN, n);
     if (ex->children.size() != 1) goto bad;
 
     {
         n = ex->children[0];
-        Term * tm = get<Term>(NOTHR, n);
+        Term *tm = get<Term>(NOTHR, n);
         if (!tm) goto bad;
 
         {
             if (tm->children.size() != 1) goto bad;
             n = tm->children[0];
-            Idn * id = get<Idn>(NOTHR, n);
+            Idn *id = get<Idn>(NOTHR, n);
             if (!id) goto bad;
 
             return id->s;
         }
     }
 
-bad:
+    bad:
     throw Err("Expecting name of a macro", n->tok());
 }
 
-void Macros::process_autobits(Macuse & mu, Autobits & autobits)
-{
+void Macros::process_autobits(Macuse &mu, Autobits &autobits) {
     Unumber val = autobits.val(mu);
     string name = autobits.name();
     Pnode macdef = root->macdefs[name];
 
-    if (!macdef)
-    {
+    if (!macdef) {
         // obtain bit macuse names
         if (mu.children.size() != 4) throw Err(LNFUN);
         string bit0 = autobits.getid(mu.children[2]);
@@ -370,15 +334,14 @@ void Macros::process_autobits(Macuse & mu, Autobits & autobits)
 
         Pnode md(new Macdef(mu.tok()));
 
-        while (val != 0)
-        {
+        while (val != 0) {
             string bit = bit0;
             if (val.getbit(0)) bit = bit1;
             val >>= 1;
 
             Token tk(mu.tok());
             tk.s = bit;
-            Macuse * u = new Macuse(tk, Pnode(new Labels(mu.tok())));
+            Macuse *u = new Macuse(tk, Pnode(new Labels(mu.tok())));
             md->addChild(Pnode(u));
         }
 
@@ -391,8 +354,7 @@ void Macros::process_autobits(Macuse & mu, Autobits & autobits)
     mu.children.pop_back();
 }
 
-Pnode Confinement::tsnum(Token tok, Cell c)
-{
+Pnode Confinement::tsnum(Token tok, Cell c) {
     auto xts = c.ts();
     Unumber t = xts.t;
     Unumber s = xts.s;
@@ -404,19 +366,18 @@ Pnode Confinement::tsnum(Token tok, Cell c)
     return ts;
 }
 
-Pnode Confinement::item(Pnode ts)
-{
+Pnode Confinement::item(Pnode ts) {
     Token tok = ts->tok();
 
     Pnode cnst(new Cnst(tok, ts, Cnst::eTsnum));
     Pnode term(new Term(tok, cnst, Term::eCnst));
 
-    Expr * r_expr = new Expr(tok);
+    Expr *r_expr = new Expr(tok);
     r_expr->typ = Expr::eTerm;
     r_expr->addChild(term);
     Pnode expr(r_expr);
 
-    Item * r_item = new Item(tok);
+    Item *r_item = new Item(tok);
     r_item->typ = Item::eExpr;
     r_item->addChild(expr);
     Pnode itm(r_item);
@@ -425,8 +386,7 @@ Pnode Confinement::item(Pnode ts)
 }
 
 
-Nodes Confinement::table()
-{
+Nodes Confinement::table() {
     Unumber N = root->comp->proc.N;
     Unumber N2 = root->comp->proc.N2;
     Token tok = mu.tok();
@@ -444,7 +404,7 @@ Nodes Confinement::table()
         get<Expr>(LNFUN, mu.children[1]);
         get<Term>(LNFUN, mu.children[1]->children[0]);
 
-        Idn * id = get<Idn>(NOTHR, mu.children[1]->children[0]->children[0]);
+        Idn *id = get<Idn>(NOTHR, mu.children[1]->children[0]->children[0]);
         if (id)
             type = id->s;
     }
@@ -466,8 +426,7 @@ Nodes Confinement::table()
     std::vector<Cell> vm;
 
     int cntr = ORDMAX;
-    while (--cntr > 0)
-    {
+    while (--cntr > 0) {
         Unumber k = gc;
         k.pow(p1n, N2);
         k = k.mul(c1.x(), N2);
@@ -489,13 +448,12 @@ Nodes Confinement::table()
         throw Err("Table order is too high - increase constant ORDMAX ("
                   + bug::to_string(ORDMAX) + ")", tok);
 
-    Instruction * pi = new Instruction(tok);
+    Instruction *pi = new Instruction(tok);
 
     pi->typ = Instruction::eData;
 
     if (type == "_map_")
-        for (decltype(vm.size()) i = 0; i < vm.size(); i += 2)
-        {
+        for (decltype(vm.size()) i = 0; i < vm.size(); i += 2) {
             Cell address = vm[i];
             Cell value = vm[i + 1];
             Pnode itm = item(tsnum(tok, value));
@@ -503,18 +461,17 @@ Nodes Confinement::table()
             Pnode labels(new Labels(tok));
             labels->addChild(tsnum(tok, address));
 
-            Litem * r_litem = new Litem(tok, labels, itm, Litem::eItm);
+            Litem *r_litem = new Litem(tok, labels, itm, Litem::eItm);
             Pnode litem(r_litem);
 
             pi->addChild(litem);
         }
     else if (type == "_array_")
-        for (auto i : vm)
-        {
+        for (auto i: vm) {
             Pnode itm = item(tsnum(tok, i));
 
             Pnode labels(new Labels(tok));
-            Litem * r_litem = new Litem(tok, labels, itm, Litem::eItm);
+            Litem *r_litem = new Litem(tok, labels, itm, Litem::eItm);
             Pnode litem(r_litem);
 
             pi->addChild(litem);

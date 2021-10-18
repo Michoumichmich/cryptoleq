@@ -15,18 +15,17 @@
 
 using std::string;
 
-struct Stat
-{
+struct Stat {
     string filename;
 
-    struct Entry
-    {
+    struct Entry {
         string name;
         Unumber val;
         Cell addr;
         unsigned long long counter = 0;
 
         Entry(string n) : name(n) {}
+
         Entry(Unumber n) : val(n) {}
     };
 
@@ -39,15 +38,23 @@ struct Stat
     unsigned long long cntr_mix = 0;
 
     void init(string file);
-    void addEntry(string nm);
-    string dumpEntries() const;
-    void output() const;
-    void output_e() const;
-    void addrinit();
-    void populate_addr(const Root & root);
 
-    void ip(const Cell & i);
+    void addEntry(string nm);
+
+    string dumpEntries() const;
+
+    void output() const;
+
+    void output_e() const;
+
+    void addrinit();
+
+    void populate_addr(const Root &root);
+
+    void ip(const Cell &i);
+
     void io() { ++cntr_io; }
-    void instr(const Cell & a, const Cell & b);
+
+    void instr(const Cell &a, const Cell &b);
 
 };

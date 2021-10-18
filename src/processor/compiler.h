@@ -9,62 +9,76 @@
 
 #include "processor.h"
 
-class Compiler
-{
-    public:
-        ProcessorTS proc;
+class Compiler {
+public:
+    ProcessorTS proc;
 
-    private:
-        Unumber p, q, phi, phim1; // phim1=phi^-1, km1=k^-1
-        Unumber k, km1, g, rndN; // g=1+kN, rndN(seeded and ^N)
-        Unumber p1Nk1N; // phim1*km1 mod N
-        Unumber Nm1; // N*Nm1=1 mod phi
+private:
+    Unumber p, q, phi, phim1; // phim1=phi^-1, km1=k^-1
+    Unumber k, km1, g, rndN; // g=1+kN, rndN(seeded and ^N)
+    Unumber p1Nk1N; // phim1*km1 mod N
+    Unumber Nm1; // N*Nm1=1 mod phi
 
-    public:
-        Unumber sneak;
+public:
+    Unumber sneak;
 
-    private:
-        // not used values
-        Unumber rnd;
-        unsigned bit_guard;
+private:
+    // not used values
+    Unumber rnd;
+    unsigned bit_guard;
 
-        void next_rnd();
+    void next_rnd();
 
-        void init(Unumber n);
+    void init(Unumber n);
 
-        static const unsigned MaxPrimeCheck = 70;
-        static bool isPrime(const Unumber & n);
-        static bool isEuler(const Unumber & m, const Unumber & phi, unsigned max);
+    static const unsigned MaxPrimeCheck = 70;
 
-        Cell encryptRN(Unumber x, Unumber rN);
+    static bool isPrime(const Unumber &n);
 
-    public:
-        Compiler(): rndN(0), sneak(1) {}
+    static bool isEuler(const Unumber &m, const Unumber &phi, unsigned max);
 
-        void init_pqkru();
-        void init_pragma();
-        void init_pqkru(Unumber an, Unumber ap, Unumber aq,
-                        Unumber ak, Unumber r, unsigned u);
+    Cell encryptRN(Unumber x, Unumber rN);
 
-        void show() const;
+public:
+    Compiler() : rndN(0), sneak(1) {}
 
-        bool isrnd() const { return !rnd.iszero(); }
-        Unumber random() { next_rnd(); return rndN; }
-        Unumber access_g() const { return g; }
-        Unumber access_phi() const { return phi; }
-        Unumber access_p1Nk1N() const { return p1Nk1N; }
-        Unumber access_Nm1() const { return Nm1; }
-        Unumber fkf() const;
+    void init_pqkru();
 
-        Unumber congruenceN(Unumber ix) { return congruence(ix, proc.N); }
-        Unumber congruenceN2(Unumber ix) { return congruence(ix, proc.N2); }
+    void init_pragma();
 
-        Cell encrypt(Unumber x) { return encryptRN(x, random()); }
-        Cell encrypt(Unumber x, Unumber R);
+    void init_pqkru(Unumber an, Unumber ap, Unumber aq,
+                    Unumber ak, Unumber r, unsigned u);
 
-        Unumber decrypt(Cell c, Unumber * R);
+    void show() const;
 
-        Unumber peek_rndN() const { return rndN; }
+    bool isrnd() const { return !rnd.iszero(); }
+
+    Unumber random() {
+        next_rnd();
+        return rndN;
+    }
+
+    Unumber access_g() const { return g; }
+
+    Unumber access_phi() const { return phi; }
+
+    Unumber access_p1Nk1N() const { return p1Nk1N; }
+
+    Unumber access_Nm1() const { return Nm1; }
+
+    Unumber fkf() const;
+
+    Unumber congruenceN(Unumber ix) { return congruence(ix, proc.N); }
+
+    Unumber congruenceN2(Unumber ix) { return congruence(ix, proc.N2); }
+
+    Cell encrypt(Unumber x) { return encryptRN(x, random()); }
+
+    Cell encrypt(Unumber x, Unumber R);
+
+    Unumber decrypt(Cell c, Unumber *R);
+
+    Unumber peek_rndN() const { return rndN; }
 };
 
 

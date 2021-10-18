@@ -9,6 +9,7 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "mmcalc.h"
@@ -17,18 +18,17 @@ using namespace mmc;
 using std::string;
 using std::cout;
 
-const char * const modulus = "modulus"; // special variable
+const char *const modulus = "modulus"; // special variable
 
 static bool go_on = true;
 static int line = 1;
 static int inside_expr = 0;
 bool mmc::interactive = true;
-std::istream * mmc::gin = nullptr;
+std::istream *mmc::gin = nullptr;
 static bool prn = false;
 
-string tos(int x)
-{
-    std::to_string(x);
+string tos(int x) {
+    return std::to_string(x);
 }
 
 /*
@@ -61,60 +61,144 @@ function:
 
 */
 
-namespace mmc
-{
-struct Token
-{
-    enum Typ { Bad, Str, Num, Raw, Eof } typ;
-    string str;
-    Unumber num;
-    Token(const string & s): typ(Raw), str(s), num(0) {}
-    Token(char c): typ(Raw), str(string() + c), num(0) {}
-    Token(Unumber n): typ(Num), num(n) {}
+namespace mmc {
+    struct Token {
+        enum Typ {
+            Bad, Str, Num, Raw, Eof
+        } typ;
+        string str;
+        Unumber num;
 
-    Token(Token::Typ t, const string & s = ""): typ(t), str(s) {}
+        Token(string s) : typ(Raw), str(std::move(s)), num(0) {}
 
-    bool is(const string & s) const { return typ == Raw && str == s; }
-    string tos(unsigned base) const;
+        Token(char c) : typ(Raw), str(string() + c), num(0) {}
 
-    Token opout(Token t, char op, Token * b) const;
-    friend bool operator==(Token t1, Token t2);
-};
+        Token(Unumber n) : typ(Num), num(n) {}
 
-bool operator==(Token t1, Token t2)
-{
-    if ( t1.typ != t2.typ ) return false;
-    if ( t1.str != t2.str ) return false;
-    return t1.num == t2.num;
-}
+        Token(Token::Typ t, string s = "") : typ(t), str(std::move(s)) {}
+
+        bool is(const string &s) const { return typ == Raw && str == s; }
+
+        string tos(unsigned base) const;
+
+        Token opout(Token t, char op, Token *b) const;
+
+        friend bool operator==(const Token &t1, const Token &t2);
+    };
+
+    bool operator==(const Token &t1, const Token &t2) {
+        if (t1.typ != t2.typ) return false;
+        if (t1.str != t2.str) return false;
+        return t1.num == t2.num;
+    }
 
 } // mmc
 
 typedef std::vector<mmc::Token> Vtoken;
 static Vtoken g_token_buf;
-void putback(Token t) { g_token_buf.push_back(t); }
 
-struct Value
-{
+void putback(const Token &t) { g_token_buf.push_back(t); }
+
+struct Value {
     std::vector<Token> x;
 
-    Value() {}
-    Value(Token t) { x.push_back(t); }
+    Value() = default;
+
+    Value(const Token &t) { x.push_back(t); }
 
     string tos(unsigned base) const;
 
-    Value operator+=(Value v) { opin(v, '+'); return *this; }
-    Value operator-=(Value v) { opin(v, '-'); return *this; }
-    Value operator*=(Value v) { opin(v, '*'); return *this; }
-    Value operator/=(Value v) { opin(v, '/'); return *this; }
-    Value operator%=(Value v) { opin(v, '%'); return *this; }
-    Value operator&=(Value v) { opin(v, '^'); return *this; }
+    Value operator+=(const Value &v) {
+        opin(v, '+');
+        return *this;
+    }
 
-    void opin(Value v, char op);
+    Value operator-=(const Value &v) {
+        opin(v, '-');
+        return *this;
+    }
+
+    Value operator*=(const Value &v) {
+        opin(v, '*');
+        return *this;
+    }
+
+    Value operator/=(const Value &v) {
+        opin(v, '/');
+        return *this;
+    }
+
+    Value operator%=(const Value &v) {
+        opin(v, '%');
+        return *this;
+    }
+
+    Value operator&=(const Value &v) {
+        opin(v, '^');
+        return *this;
+    }
+
+    void opin(const Value &v, char op);
+
     void factorial();
 
     friend bool operator==(Value v1, Value v2);
 };
+
+
+Value print(unsigned base);
+
+Value modexpr();
+
+Value divide();
+
+Value deletevar();
+
+Value esub();
+
+Value factors();
+
+Value factor1();
+
+Value assert_();
+
+Value sizef();
+
+Value define();
+
+Value index();
+
+Value gcdf();
+
+Value lcmf();
+
+Value ordf();
+
+Value expr();
+
+Value prim();
+
+Value powr();
+
+Value func();
+
+Value term();
+
+
+Token input_token();
+
+Token input_number();
+
+Token input_word();
+
+Token input_strseq();
+
+Token symb();
+
+Token oper2(char c);
+
+Token input_token_nodic();
+
 
 typedef std::map<string, Value> Vars;
 Vars vars;
@@ -122,34 +206,32 @@ typedef std::map<string, Vtoken> Dictionary;
 Dictionary dictionary;
 
 void statement();
-void mmc::mmcf()
-{
-    if ( interactive ) std::cout << "> ";
 
-    while (go_on && !!*gin)
-    {
-        try
-        {
+void mmc::mmcf() {
+    if (interactive) std::cout << "> ";
+
+    while (go_on && !!*gin) {
+        try {
             statement();
         }
-        catch (string e)
-        {
+        catch (std::exception &e) {
             inside_expr = 0;
-            std::cout << "Error: (" << line << ") " << e << "\n";
+            std::cout << "Error: (" << line << ") " << e.what() << "\n";
         }
     }
 }
 
-void statement()
-{
-    Token input_token();
+void statement() {
+
     Token t = input_token();
-    if ( t.typ == Token::Eof ) { go_on = false; return; }
-    if ( t.is(";")  ) return;
+    if (t.typ == Token::Eof) {
+        go_on = false;
+        return;
+    }
+    if (t.is(";")) return;
 
     putback(t);
 
-    Value expr();
     inside_expr++;
     Value v = expr();
     inside_expr--;
@@ -157,37 +239,36 @@ void statement()
     if (prn) std::cout << v.tos(10) << '\n';
 
     t = input_token();
-    if ( t.typ == Token::Eof ) { go_on = false; return; }
-    if ( t.is(";")  ) return;
+    if (t.typ == Token::Eof) {
+        go_on = false;
+        return;
+    }
+    if (t.is(";")) return;
 
     throw "Unexpected token [" + (t.typ == Token::Num ? t.num.str() : t.str) + "]:" + tos(t.typ);
 }
 
-Token input_token()
-{
-    Token input_token_nodic();
+Token input_token() {
     Token t = input_token_nodic();
 
-    Dictionary & d = dictionary;
+    Dictionary &d = dictionary;
 
-    if ( t.typ != Token::Raw ) return t;
+    if (t.typ != Token::Raw) return t;
 
-    Dictionary::iterator it = d.find(t.str);
+    auto it = d.find(t.str);
 
-    if ( it == d.end() ) return t;
+    if (it == d.end()) return t;
 
-    const Vtoken & vt = it->second;
+    const Vtoken &vt = it->second;
 
-    for ( size_t i = 0; i < vt.size(); i++ )
+    for (size_t i = 0; i < vt.size(); i++)
         putback(vt[vt.size() - i - 1]);
 
     return input_token();
 }
 
-Token input_token_nodic()
-{
-    if ( !g_token_buf.empty() )
-    {
+Token input_token_nodic() {
+    if (!g_token_buf.empty()) {
         Token t = g_token_buf.back();
         g_token_buf.pop_back();
         return t;
@@ -195,19 +276,18 @@ Token input_token_nodic()
 
     bool comm = false;
 
-read:
+    read:
     int ic = gin->get();
-    if ( ic == std::char_traits<char>::eof() ) return Token(Token::Eof);
+    if (ic == std::char_traits<char>::eof()) return Token(Token::Eof);
     char c = char(ic);
 
-    if ( c == '#' ) comm = true;
+    if (c == '#') comm = true;
 
-    if ( c == ' ' || c == '\t' || c == '\r' ) goto read;
-    if ( c == '\n' )
-    {
+    if (c == ' ' || c == '\t' || c == '\r') goto read;
+    if (c == '\n') {
         comm = false;
 
-        if ( interactive )
+        if (interactive)
             std::cout << (prn ? "prn" : "")
                       << (inside_expr ? "-" : "") << "> ";
 
@@ -215,61 +295,60 @@ read:
         goto read;
     }
 
-    if ( comm ) goto read;
-
-    Token input_number();
-    Token input_word();
-    Token input_strseq();
+    if (comm) goto read;
 
     if (0);
-    else if ( std::isdigit(c) ) { gin->putback(c); return input_number(); }
-    else if ( std::isalpha(c) || c == '_' ) { gin->putback(c); return input_word(); }
-    else if ( c == '\"' ) { return input_strseq(); }
+    else if (std::isdigit(c)) {
+        gin->putback(c);
+        return input_number();
+    } else if (std::isalpha(c) || c == '_') {
+        gin->putback(c);
+        return input_word();
+    } else if (c == '\"') { return input_strseq(); }
 
     gin->putback(c);
-    Token symb();
     return symb();
 }
 
-Token symb()
-{
+Token symb() {
     int ic = gin->get();
-    if ( ic == std::char_traits<char>::eof() ) return Token(Token::Eof);
+    if (ic == std::char_traits<char>::eof()) return Token(Token::Eof);
     char c = char(ic);
 
-    if ( c == ';' || c == ',' || c == '(' || c == ')'
-            || c == '[' || c == ']' || c == '!' || c == ':'
-            || c == '{' || c == '}' || c == '.' ) return c;
+    if (c == ';' || c == ',' || c == '(' || c == ')'
+        || c == '[' || c == ']' || c == '!' || c == ':'
+        || c == '{' || c == '}' || c == '.')
+        return c;
 
-    Token oper2(char c);
-    if ( c == '+' || c == '-' || c == '/' || c == '*'
-            || c == '%' || c == '^' || c == '=' ) return oper2(c);
 
-    throw string() + "Unknown symbol [" + c + "]";
+    if (c == '+' || c == '-' || c == '/' || c == '*'
+        || c == '%' || c == '^' || c == '=')
+        return oper2(c);
+
+    throw std::runtime_error(string("Unknown symbol [") + c + "]");
 }
 
-Token oper2(char c)
-{
+Token oper2(char c) {
     int ic = gin->get();
-    if ( ic == std::char_traits<char>::eof() ) return c;
+    if (ic == std::char_traits<char>::eof()) return c;
     char c2 = char(ic);
 
-    if ( c2 != '=' ) { gin->putback(c2); return c; }
+    if (c2 != '=') {
+        gin->putback(c2);
+        return c;
+    }
 
     return Token(string() + c + c2);
 }
 
-Token input_word()
-{
+Token input_word() {
     string s;
-    while (1)
-    {
+    while (true) {
         int ic = gin->get();
-        if ( ic == std::char_traits<char>::eof() ) break;
+        if (ic == std::char_traits<char>::eof()) break;
         char c = char(ic);
-        if ( std::isalnum(c) || c == '_' ) s += c;
-        else
-        {
+        if (std::isalnum(c) || c == '_') s += c;
+        else {
             gin->putback(c);
             break;
         }
@@ -278,77 +357,65 @@ Token input_word()
     return s;
 }
 
-Token input_number()
-{
+Token input_number() {
     Token t = input_word();
     void build_number(Token &);
     build_number(t);
     return t;
 }
 
-void build_number(Token & t)
-{
+void build_number(Token &t) {
     t.num = Unumber(t.str, Unumber::Decimal);
     t.typ = Token::Num;
     t.str = "";
 }
 
-Token input_strseq()
-{
-    string s;
-    while (1)
-    {
+Token input_strseq() {
+    string s{};
+    while (true) {
         int ic = gin->get();
-        if ( ic == std::char_traits<char>::eof() ) break;
+        if (ic == std::char_traits<char>::eof()) break;
         char c = char(ic);
-        if ( c == '\\' )
-        {
+        if (c == '\\') {
             c = char(gin->get());
-            if ( c == '\\' )c = '\\';
-            if ( c == 'n' ) c = '\n';
-            if ( c == 'r' ) c = '\r';
-            if ( c == 't' ) c = '\t';
-            if ( c == '"' ) c = '\"';
-        }
-        else if ( c == '\"' ) break;
+            if (c == '\\')c = '\\';
+            if (c == 'n') c = '\n';
+            if (c == 'r') c = '\r';
+            if (c == 't') c = '\t';
+            if (c == '"') c = '\"';
+        } else if (c == '\"') break;
         s += c;
     }
 
     return Token(Token::Str, s);
 }
 
-Value expr()
-{
+Value expr() {
     Token t = input_token();
-    if ( t.typ == Token::Raw )
-    {
+    if (t.typ == Token::Raw) {
         Token t2 = input_token();
 
-        if (0) {}
-        else if ( t2.is("=") ) return ( vars[t.str] = expr() );
-        else if ( t2.is("+=") ) return ( vars[t.str] += expr() );
-        else if ( t2.is("-=") ) return ( vars[t.str] -= expr() );
-        else if ( t2.is("*=") ) return ( vars[t.str] *= expr() );
-        else if ( t2.is("/=") ) return ( vars[t.str] /= expr() );
-        else if ( t2.is("%=") ) return ( vars[t.str] %= expr() );
-        else if ( t2.is("^=") ) return ( vars[t.str] &= expr() );
+        if (t2.is("=")) return (vars[t.str] = expr());
+        else if (t2.is("+=")) return (vars[t.str] += expr());
+        else if (t2.is("-=")) return (vars[t.str] -= expr());
+        else if (t2.is("*=")) return (vars[t.str] *= expr());
+        else if (t2.is("/=")) return (vars[t.str] /= expr());
+        else if (t2.is("%=")) return (vars[t.str] %= expr());
+        else if (t2.is("^=")) return (vars[t.str] &= expr());
 
         putback(t2);
     }
     putback(t);
 
-    Value esub();
     Value es = esub();
 
-    while (1)
-    {
+    while (true) {
         t = input_token();
         if (0) {}
-        else if ( t.is(",") ) es.opin(esub(), ',');
-        else if ( t.is(":") ) es.opin(esub(), ':');
-        else if ( t.is(".") ) es.opin(esub(), '.');
-        else
-        {
+        else if (t.is(",")) es.opin(esub(), ',');
+        else if (t.is(":")) es.opin(esub(), ':');
+        else if (t.is(".")) es.opin(esub(), '.');
+        else {
             putback(t);
             break;
         }
@@ -357,18 +424,15 @@ Value expr()
     return es;
 }
 
-Value esub()
-{
-    Value term();
+Value esub() {
+
     Value tr = term();
 
-    while (1)
-    {
+    while (1) {
         Token t = input_token();
-        if ( t.is("+") ) tr += term();
-        else if ( t.is("-") ) tr -= term();
-        else
-        {
+        if (t.is("+")) tr += term();
+        else if (t.is("-")) tr -= term();
+        else {
             putback(t);
             break;
         }
@@ -378,19 +442,16 @@ Value esub()
 }
 
 
-Value term()
-{
-    Value powr();
+Value term() {
+
     Value pw = powr();
 
-    while (1)
-    {
+    while (1) {
         Token t = input_token();
-        if ( t.is("*") ) pw *= powr();
-        else if ( t.is("/") ) pw /= powr();
-        else if ( t.is("%") ) pw %= powr();
-        else
-        {
+        if (t.is("*")) pw *= powr();
+        else if (t.is("/")) pw /= powr();
+        else if (t.is("%")) pw %= powr();
+        else {
             putback(t);
             break;
         }
@@ -399,29 +460,23 @@ Value term()
     return pw;
 }
 
-Value powr()
-{
-    Value prim();
+Value powr() {
+
     Value pr = prim();
 
-    while (1)
-    {
+    while (1) {
         Token t = input_token();
-        if ( t.is("^") ) pr &= prim();
-        else if ( t.is("!") ) pr.factorial();
-        else if ( t.is("[") )
-        {
+        if (t.is("^")) pr &= prim();
+        else if (t.is("!")) pr.factorial();
+        else if (t.is("[")) {
             Value v = expr();
             pr.opin(v, '[');
             Token t2 = input_token();
-            if ( !t2.is("]") )
-            {
+            if (!t2.is("]")) {
                 putback(t2);
                 throw string() + "Expecting ']'";
             }
-        }
-        else
-        {
+        } else {
             putback(t);
             break;
         }
@@ -431,50 +486,44 @@ Value powr()
 }
 
 
-Value prim()
-{
+Value prim() {
     Token t = input_token();
 
-    if ( t.typ == Token::Str ) return t;
-    if ( t.typ == Token::Num ) return t;
+    if (t.typ == Token::Str) return t;
+    if (t.typ == Token::Num) return t;
 
-    if ( t.typ != Token::Raw ) throw "Unknown error at 'prim'";
+    if (t.typ != Token::Raw) throw std::runtime_error("Unknown error at 'prim'");
 
-    Vars::iterator it = vars.find(t.str);
-    if ( it != vars.end() ) return it->second;
+    auto it = vars.find(t.str);
+    if (it != vars.end()) return it->second;
 
-    if ( t.is("-") )
-    {
+    if (t.is("-")) {
         Value r(Unumber(0));
         r -= prim();
         return r;
     }
 
-    if ( t.is("{") ) throw "Not implemented 744";
+    if (t.is("{")) throw std::runtime_error("Not implemented 744");
 
-    if ( t.is("(") )
-    {
+    if (t.is("(")) {
         Value v = expr();
         Token t2 = input_token();
-        if ( t2.is(")") ) return v;
-        throw "Expecting ')' got [" + t.str + "]";
+        if (t2.is(")")) return v;
+        throw std::runtime_error("Expecting ')' got [" + t.str + "]");
     }
 
     putback(t);
 
-    Value func();
     return func();
 }
 
-Value print(unsigned base)
-{
+Value print(unsigned base) {
     Value v = expr();
     std::cout << v.tos(base) << '\n';
     return v;
 }
 
-Value modexpr()
-{
+Value modexpr() {
     Value savemod = vars[modulus];
     vars[modulus] = Value();
 
@@ -489,334 +538,278 @@ Value modexpr()
     return v2;
 }
 
-Value divide()
-{
+Value divide() {
     Value v1 = expr();
     Value v2 = expr();
     v1.opin(v2, 'd');
     return v1;
 }
 
-Value assert_()
-{
+Value assert_() {
     Value v1 = expr();
     Value v2 = expr();
-    if ( v1 == v2 ) return v1;
-    throw "Assert failed";
+    if (v1 == v2) return v1;
+    throw std::runtime_error("Assert failed");
 }
 
-Value gcdf()
-{
+Value gcdf() {
     Value v1 = expr();
     Value v2 = expr();
     v1.opin(v2, 'g');
     return v1;
 }
 
-Value lcmf()
-{
+Value lcmf() {
     Value v1 = expr();
     Value v2 = expr();
     v1.opin(v2, 'l');
     return v1;
 }
 
-Value index()
-{
+Value index() {
     Value v1 = expr();
     Value v2 = expr();
     v1.opin(v2, 'i');
     return v1;
 }
 
-Value deletevar()
-{
+Value deletevar() {
     Token t = input_token();
-    if ( t.typ != Token::Raw )
-        throw "Bad token for delete function";
+    if (t.typ != Token::Raw)
+        throw std::runtime_error("Bad token for delete function");
 
-    if ( vars.find(t.str) == vars.end() ) return Value(0);
+    if (vars.find(t.str) == vars.end()) return {0};
     vars.erase(t.str);
-    return Value(1);
+    return {1};
 }
 
-Value ordf()
-{
+Value ordf() {
     Value v = expr(), r;
 
-    for ( size_t i = 0; i < v.x.size(); i++ )
-        r.x.push_back( v.x[i].opout(v.x[i], 'o', 0) );
+    for (auto &i: v.x)
+        r.x.push_back(i.opout(i, 'o', 0));
 
     return r;
 }
 
-Value func()
-{
+Value func() {
     Token t = input_token();
 
-    Value print(unsigned base);
-    Value modexpr();
-    Value divide();
-    Value deletevar();
-    Value factors();
-    Value factor1();
-    Value assert_();
-    Value sizef();
-    Value define();
-    Value index();
-    Value gcdf();
-    Value lcmf();
-    Value ordf();
-
     if (0) {}
-    else if ( t.is("print") ) return print(10);
-    else if ( t.is("printhex") ) return print(16);
-    else if ( t.is("printbin") ) return print(2);
-    else if ( t.is("delete") ) return deletevar();
-    else if ( t.is("quit") || t.is("exit") || t.is("q") ) { go_on = false; return Value(); }
-    else if ( t.is("div") ) return divide();
-    else if ( t.is("mod") ) return modexpr();
-    else if ( t.is("factors") ) return factors();
-    else if ( t.is("factor") ) return factor1();
-    else if ( t.is("assert") ) return assert_();
-    else if ( t.is("size") ) return sizef();
-    else if ( t.is("define") ) return define();
-    else if ( t.is("index") ) return index();
-    else if ( t.is("gcd") ) return gcdf();
-    else if ( t.is("lcm") ) return lcmf();
-    else if ( t.is("ord") ) return ordf();
-    else if ( t.is("prn") ) { prn = !prn; return Value(); }
+    else if (t.is("print")) return print(10);
+    else if (t.is("printhex")) return print(16);
+    else if (t.is("printbin")) return print(2);
+    else if (t.is("delete")) return deletevar();
+    else if (t.is("quit") || t.is("exit") || t.is("q")) {
+        go_on = false;
+        return {};
+    } else if (t.is("div")) return divide();
+    else if (t.is("mod")) return modexpr();
+    else if (t.is("factors")) return factors();
+    else if (t.is("factor")) return factor1();
+    else if (t.is("assert")) return assert_();
+    else if (t.is("size")) return sizef();
+    else if (t.is("define")) return define();
+    else if (t.is("index")) return index();
+    else if (t.is("gcd")) return gcdf();
+    else if (t.is("lcm")) return lcmf();
+    else if (t.is("ord")) return ordf();
+    else if (t.is("prn")) {
+        prn = !prn;
+        return {};
+    }
 
-    throw "Function [" + t.str + "] is not defined";
+    throw std::runtime_error("Function [" + t.str + "] is not defined");
 }
 
 
-string Value::tos(unsigned base) const
-{
-    string r;
-    for ( size_t i = 0; i < x.size(); i++ )
+string Value::tos(unsigned base) const {
+    string r{};
+    for (size_t i = 0; i < x.size(); i++)
         r += string(i ? "," : "") + x[i].tos(base);
     return r;
 }
 
-string Token::tos(unsigned base) const
-{
-    switch (typ)
-    {
-        case Str: return str;
-        case Num: return num.str(base);
-        case Bad: return "error(" + str + ")";
-        case Raw: return "raw(" + str + ")";
-        case Eof: return "EOF";
+string Token::tos(unsigned base) const {
+    switch (typ) {
+        case Str:
+            return str;
+        case Num:
+            return num.str(base);
+        case Bad:
+            return "error(" + str + ")";
+        case Raw:
+            return "raw(" + str + ")";
+        case Eof:
+            return "EOF";
     }
 
-    throw "Token::tos";
+    throw std::runtime_error("Token::tos");
 }
 
-void Value::opin(Value v, char op)
-{
-    if ( op == ',' )
-    {
-        for ( size_t j = 0; j < v.x.size(); j++ )
-            x.push_back( v.x[j] );
+void Value::opin(const Value &v, char op) {
+    if (op == ',') {
+        for (const auto &j: v.x)
+            x.push_back(j);
 
         return;
     }
 
     Value r;
-    if ( op == '[' )
-    {
-        for ( size_t j = 0; j < v.x.size(); j++ )
-        {
-            Token t = v.x[j];
-            if ( t.typ == Token::Str ) build_number(t);
+    if (op == '[') {
+        for (auto t: v.x) {
+            if (t.typ == Token::Str) build_number(t);
             size_t index = size_t(t.num.to_ull());
-            if ( index >= x.size() )
-                throw "Index out of bounds: " + ::tos(index);
+            if (index >= x.size())
+                throw std::runtime_error("Index out of bounds: " + ::tos(index));
             else
-                r.x.push_back( x[index] );
+                r.x.push_back(x[index]);
         }
 
         x.swap(r.x);
         return;
     }
 
-    for ( size_t i = 0; i < x.size(); i++ )
-        for ( size_t j = 0; j < v.x.size(); j++ )
-        {
+    for (size_t i = 0; i < x.size(); i++)
+        for (auto &j: v.x) {
             if (0);
-            else if ( op == 'i' )
-            {
-                if ( x[i] == v.x[j] )
-                    r.x.push_back(Unumber(i));
-            }
-            else if ( op == ':' )
-            {
-                const Token & t1 = x[i];
-                const Token & t2 = v.x[j];
-                if ( t1.typ != Token::Num || t2.typ != Token::Num ) continue;
-                for ( Unumber k = t1.num; !(t2.num < k); ++k )
-                    r.x.push_back(k);
-            }
-            else if ( op == 'd' )
-            {
+            else if (op == 'i') {
+                if (x[i] == j)
+                    r.x.emplace_back(Unumber(i));
+            } else if (op == ':') {
+                const Token &t1 = x[i];
+                const Token &t2 = j;
+                if (t1.typ != Token::Num || t2.typ != Token::Num) continue;
+                for (Unumber k = t1.num; !(t2.num < k); ++k)
+                    r.x.emplace_back(k);
+            } else if (op == 'd') {
                 Token q(Unumber(0));
-                Token a = x[i].opout(v.x[j], op, &q);
+                Token a = x[i].opout(j, op, &q);
                 r.x.push_back(q);
                 r.x.push_back(a);
-            }
-            else
-            {
-                r.x.push_back( x[i].opout(v.x[j], op, 0) );
+            } else {
+                r.x.push_back(x[i].opout(j, op, nullptr));
             }
         }
 
     x.swap(r.x);
 }
 
-void Value::factorial()
-{
+void Value::factorial() {
     Value r;
 
-    for ( size_t i = 0; i < x.size(); i++ )
-        r.x.push_back( x[i].opout(x[i], 'f', 0) );
+    for (auto &i: x)
+        r.x.push_back(i.opout(i, 'f', 0));
 
     x.swap(r.x);
 }
 
-Token Token::opout(Token t, char op, Token * b) const
-{
+Token Token::opout(Token t, char op, Token *b) const {
     Token m(*this);
-    if ( typ == Bad || t.typ == Bad ) throw string() + "Cannot operate on Bad value";
-    if ( typ == Raw || t.typ == Raw ) throw "Cannot operate on Raw value";
+    if (typ == Bad || t.typ == Bad) throw std::runtime_error("Cannot operate on Bad value");
+    if (typ == Raw || t.typ == Raw) throw std::runtime_error("Cannot operate on Raw value");
 
-    if ( op == '.' )
-    {
-        if ( typ == Num ) m.str = m.num.str();
-        if ( t.typ == Num ) t.str = t.num.str();
+    if (op == '.') {
+        if (typ == Num) m.str = m.num.str();
+        if (t.typ == Num) t.str = t.num.str();
         return Token(Token::Str, m.str + t.str);
     }
 
-    if ( typ == Str ) build_number(m);
-    if ( t.typ == Str ) build_number(t);
+    if (typ == Str) build_number(m);
+    if (t.typ == Str) build_number(t);
 
-    if ( t.typ != Num || m.typ != Num ) throw "Must operate on Num values";
+    if (t.typ != Num || m.typ != Num) throw std::runtime_error("Must operate on Num values");
 
     Unumber mod(0);
-    Vars::iterator it = vars.find(modulus);
-    if ( it != vars.end() && it->second.x.size() == 1 ) mod = it->second.x[0].num;
+    auto it = vars.find(modulus);
+    if (it != vars.end() && it->second.x.size() == 1) mod = it->second.x[0].num;
 
     if (0) {}
-    else if ( op == '%' ) return m.num % t.num;
-    else if ( op == 'd' ) return m.num.div(t.num, b->num);
+    else if (op == '%') return m.num % t.num;
+    else if (op == 'd') return m.num.div(t.num, b->num);
 
-    if ( !mod.iszero() )
-    {
-        if ( !(m.num < mod) ) m.num = m.num % mod;
-        if ( !(t.num < mod) && (op != '^') ) t.num = t.num % mod;
+    if (!mod.iszero()) {
+        if (!(m.num < mod)) m.num = m.num % mod;
+        if (!(t.num < mod) && (op != '^')) t.num = t.num % mod;
     }
 
     if (0) {}
 
-    else if ( op == '+' )
-    {
+    else if (op == '+') {
         m.num += t.num;
 
-        if ( !mod.iszero() )
-            while ( !(m.num < mod) )
+        if (!mod.iszero())
+            while (!(m.num < mod))
                 m.num -= mod;
 
         return m.num;
-    }
+    } else if (op == '*') return (mod.iszero() ? m.num * t.num : m.num.mul(t.num, mod));
 
-    else if ( op == '*' ) return (mod.iszero() ? m.num * t.num : m.num.mul(t.num, mod));
-
-    else if ( op == '-' )
-    {
-        if ( m.num < t.num ) m.num += mod;
+    else if (op == '-') {
+        if (m.num < t.num) m.num += mod;
         m.num -= t.num;
 
         return m.num;
-    }
-
-    else if ( op == 'f' )
-    {
+    } else if (op == 'f') {
         Unumber r(1);
-        while ( !m.num.iszero() )
-        {
-            if ( mod.iszero() )
+        while (!m.num.iszero()) {
+            if (mod.iszero())
                 r *= m.num;
             else
                 r = m.num.mul(r, mod);
             --m.num;
         }
         return r;
-    }
-
-    else if ( op == 'o' )
-    {
-        if ( mod.iszero() ) return Unumber(0);
+    } else if (op == 'o') {
+        if (mod.iszero()) return Unumber(0);
         Unumber r = m.num;
-        for ( Unumber i = 1; i < mod; ++i )
-        {
-            if ( r == 1 ) return i;
+        for (Unumber i = 1; i < mod; ++i) {
+            if (r == 1) return i;
             r = r.mul(m.num, mod);
         }
         return Unumber(0);
-    }
-
-    else if ( op == 'g' )
-    {
+    } else if (op == 'g') {
         return ma::gcd(t.num, m.num);
-    }
-
-    else if ( op == 'l' )
-    {
+    } else if (op == 'l') {
         Unumber g = ma::gcd(t.num, m.num);
-        if ( g.iszero() ) return 0;
+        if (g.iszero()) return 0;
         return t.num / g * m.num;
-    }
-
-    else if ( op == '^' )
-    {
-        if ( mod.iszero() ) mod -= 1;
+    } else if (op == '^') {
+        if (mod.iszero()) mod -= 1;
         m.num.pow(t.num, mod);
         return m.num;
-    }
-
-    else if ( op == '/' )
-    {
-        if ( mod.iszero() ) return m.num / t.num;
+    } else if (op == '/') {
+        if (mod.iszero()) return m.num / t.num;
         Unumber xm1;
         bool k = ma::invert(t.num, mod, &xm1);
-        if ( !k )
-        {
+        if (!k) {
             Unumber g = ma::gcd(t.num, m.num);
-            if ( g == 1 ) { t.num = 0; return t; }
+            if (g == 1) {
+                t.num = 0;
+                return t;
+            }
             t.num /= g;
             m.num /= g;
             bool k = ma::invert(t.num, mod, &xm1);
-            if ( !k ) { t.num = 0; return t; }
+            if (!k) {
+                t.num = 0;
+                return t;
+            }
         }
         return m.num.mul(xm1, mod);
-    }
-
-    else
-        throw string() + "Operation [" + op + "] not supported";
+    } else
+        throw std::runtime_error(std::string("Operation [") + op + "] not supported");
 }
 
 
-Value factors()
-{
+Value factors() {
     Value v = expr();
     Value r;
 
-    for ( size_t i = 0; i < v.x.size(); i++ )
-    {
-        std::vector<string> factorize(const string & s);
-        std::vector<string> vs = factorize(v.x[i].num.str());
-        for ( size_t j = 0; j < vs.size(); j++ )
-        {
+    for (auto &i: v.x) {
+        std::vector<string> factorize(const string &s);
+        std::vector<string> vs = factorize(i.num.str());
+        for (size_t j = 0; j < vs.size(); j++) {
             Token t(vs[j]);
             build_number(t);
             r.x.push_back(t);
@@ -826,15 +819,13 @@ Value factors()
     return r;
 }
 
-Value factor1()
-{
+Value factor1() {
     Value v = expr();
     Value r;
 
-    for ( size_t i = 0; i < v.x.size(); i++ )
-    {
-        string factorone(const string & s);
-        string vs = factorone(v.x[i].num.str());
+    for (auto &i: v.x) {
+        string factorone(const string &s);
+        string vs = factorone(i.num.str());
         {
             Token t(vs);
             build_number(t);
@@ -845,41 +836,40 @@ Value factor1()
     return r;
 }
 
-bool operator==(Value v1, Value v2)
-{
+bool operator==(Value v1, Value v2) {
     size_t sz = v1.x.size();
-    if ( sz != v2.x.size() ) return false;
+    if (sz != v2.x.size()) return false;
 
-    for ( size_t i = 0; i < sz; i++ )
-        if ( !(v1.x[i] == v2.x[i]) ) return false;
+    for (size_t i = 0; i < sz; i++)
+        if (!(v1.x[i] == v2.x[i])) return false;
 
     return true;
 }
 
-Value sizef()
-{
+Value sizef() {
     Value v = expr();
-    return Value(Token(Unumber(v.x.size())));
+    return {Token(Unumber(v.x.size()))};
 }
 
-Value define()
-{
+Value define() {
     Token t = input_token();
 
-    if ( t.is(";") ) throw "Bad define - no symbol";
-    if ( t.typ != Token::Raw ) throw "Bad define - must be name";
+    if (t.is(";")) throw std::runtime_error("Bad define - no symbol");
+    if (t.typ != Token::Raw) throw std::runtime_error("Bad define - must be name");
 
     Vtoken v;
 
-    while (1)
-    {
+    while (true) {
         Token x = input_token();
-        if ( x.is(";") ) { putback(x); break; }
+        if (x.is(";")) {
+            putback(x);
+            break;
+        }
 
         v.push_back(x);
     }
 
     dictionary[t.str] = v;
 
-    return Value();
+    return {};
 }

@@ -1,6 +1,6 @@
 #ifndef GMP
 
-const char * BIGNUM_NAME = "UNUM";
+const char *BIGNUM_NAME = "UNUM";
 
 #else
 

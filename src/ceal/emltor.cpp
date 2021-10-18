@@ -11,8 +11,7 @@
 
 using std::cout;
 
-void Emulator::run(ProcessorTS & proc, Stat * stat)
-{
+void Emulator::run(ProcessorTS &proc, Stat *stat) {
     const bool IOJMP = true;
 
     Cell ip = entry;
@@ -24,11 +23,12 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
     int iter = 0;
     int iter2 = 0;
 
-    try
-    {
-        while (++iter)
-        {
-            if (iter == 1000000) { iter2++; iter = 0; }
+    try {
+        while (++iter) {
+            if (iter == 1000000) {
+                iter2++;
+                iter = 0;
+            }
 
             if (trace) cout << "exec " << ip.str() << ":\t";
 
@@ -41,47 +41,36 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
 
             if (trace) cout << proc.str(a) << ' ' << proc.str(b) << ' ' << proc.str(mem[ip]) << ' ';
 
-            if (a == m1c && b == m1c)
-            {
+            if (a == m1c && b == m1c) {
                 if (stat) stat->io();
                 current_input_stream = &std::cin;
-                if (io_type == Pragma::Io::Text)
-                {
+                if (io_type == Pragma::Io::Text) {
                     char c;
                     std::cin.get(c);
                     if (std::cin) cout << c << std::flush;
                     if (trace) cout << " \tinout " << c << ' ';
-                }
-                else if (io_type == Pragma::Io::Ts)
-                {
+                } else if (io_type == Pragma::Io::Ts) {
                     Cell x;
                     get_ts(x, proc.N);
                     if (std::cin) cout << x.str() << '\n';
                     if (trace) cout << " \tinout " << x.str() << ' ';
-                }
-                else if (io_type == Pragma::Io::X)
-                {
+                } else if (io_type == Pragma::Io::X) {
                     Unumber x;
                     get_number(x, proc.N);
                     if (std::cin) cout << x.str() << '\n';
                     if (trace) cout << " \tinout " << x.str() << ' ';
                 }
                 if (IOJMP) ip = mem[ip]; else ++ip;
-            }
-            else if (a == m1c)
-            {
+            } else if (a == m1c) {
                 if (stat) stat->io();
                 current_input_stream = &std::cin;
                 Cell x;
-                if (io_type == Pragma::Io::Text)
-                {
+                if (io_type == Pragma::Io::Text) {
                     char c;
                     std::cin.get(c);
-                    x = Cell((unsigned char)c, 0);
-                }
-                else if (io_type == Pragma::Io::Ts) get_ts(x, proc.N);
-                else if (io_type == Pragma::Io::X)
-                {
+                    x = Cell((unsigned char) c, 0);
+                } else if (io_type == Pragma::Io::Ts) get_ts(x, proc.N);
+                else if (io_type == Pragma::Io::X) {
                     Unumber y;
                     get_number(y, proc.N);
                     x = Cell(y, Cell::X);
@@ -90,12 +79,10 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
                 mem[b] = x;
                 if (IOJMP) ip = mem[ip]; else ++ip;
                 if (trace) cout << " \tinput [b]=" << mem[b].str() << " ip=" << ip.str() << ' ';
-            }
-            else if (b == m1c)
-            {
+            } else if (b == m1c) {
                 if (stat) stat->io();
                 if (io_type == Pragma::Io::Text)
-                    std::cout << (unsigned char)(mem[a].ts().t.to_ull()) << std::flush;
+                    std::cout << (unsigned char) (mem[a].ts().t.to_ull()) << std::flush;
 
                 else if (io_type == Pragma::Io::Ts)
                     std::cout << proc.str(mem[a]) << sep_ts << std::flush;
@@ -105,12 +92,9 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
 
                 if (IOJMP) ip = mem[ip]; else ++ip;
                 if (trace) cout << " \toutput " << proc.str(mem[a]) << ' ';
-            }
-
-            else
-            {
-                const Cell & ma = mem[a];
-                Cell & mb = mem[b];
+            } else {
+                const Cell &ma = mem[a];
+                Cell &mb = mem[b];
 
                 if (stat) stat->instr(ma, mb);
 
@@ -131,8 +115,7 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
 
         }
     }
-    catch (const char * s)
-    {
+    catch (const char *s) {
         cout << s << "\nError\nip=" << ip.str() << '\n';
         cout << "mem[ip]=" << mem[ip].str() << '\n';
         cout << mem.dump() << '\n';
@@ -142,47 +125,36 @@ void Emulator::run(ProcessorTS & proc, Stat * stat)
         cout << "\nsteps=" << iter2 << std::setfill('0') << std::setw(6) << iter << '\n';
 }
 
-void Emulator::get_ts(Cell & v, Unumber N)
-{
-    if (cq_type == Pragma::Cqtype::Ts)
-    {
+void Emulator::get_ts(Cell &v, Unumber N) {
+    if (cq_type == Pragma::Cqtype::Ts) {
         Unumber t, s;
         get_number(t, N);
         char c = get_char();
         if (c == '.')
             get_number(s, N);
-        else
-        {
+        else {
             put_back(c);
             s = 0;
         }
         v = Cell(t, s);
-    }
-
-    else if (cq_type == Pragma::Cqtype::X)
-    {
+    } else if (cq_type == Pragma::Cqtype::X) {
         Unumber x;
         get_number(x, N);
         v = Cell(x, Cell::X);
-    }
-
-    else
+    } else
         throw "Unknown cqtype";
 }
 
-void Emulator::get_number(Unumber & n, Unumber N)
-{
+void Emulator::get_number(Unumber &n, Unumber N) {
     eat_spaces();
 
     char c = get_char();
 
-    if (c == '(' || c == '-')
-    {
+    if (c == '(' || c == '-') {
         bool par = false;
         if (c == '(') par = true;
 
-        if (par)
-        {
+        if (par) {
             eat_spaces();
             c = get_char();
             if (c != '-')
@@ -191,16 +163,13 @@ void Emulator::get_number(Unumber & n, Unumber N)
 
         get_number(n, N);
 
-        if (N != 0 && n > 0)
-        {
+        if (N != 0 && n > 0) {
             n = n % N;
             n = N - n;
-        }
-        else
+        } else
             n = Unumber(0) - n;
 
-        if (par)
-        {
+        if (par) {
             c = get_char();
             if (c != ')')
                 throw "Expecting closing ')' in expression";
@@ -213,8 +182,7 @@ void Emulator::get_number(Unumber & n, Unumber N)
         throw string() + "Expecting number, got [" + c + "]";
 
     string s;
-    while (std::isdigit(c))
-    {
+    while (std::isdigit(c)) {
         s += c;
         c = get_char();
     }
@@ -223,12 +191,10 @@ void Emulator::get_number(Unumber & n, Unumber N)
     n = Unumber(s, Unumber::Decimal);
 }
 
-void Emulator::eat_spaces()
-{
+void Emulator::eat_spaces() {
     char c = get_char();
 
-    while (c == ' ' || c == '\t' || c == '\r' || c == '\n')
-    {
+    while (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
         if (c == '\n') line_number++;
         c = get_char();
     }
@@ -236,8 +202,7 @@ void Emulator::eat_spaces()
     put_back(c);
 }
 
-char Emulator::get_char()
-{
+char Emulator::get_char() {
     char c;
     current_input_stream->get(c);
     if (!*current_input_stream) c = '\0';
@@ -246,14 +211,12 @@ char Emulator::get_char()
 
 // reads [t[.s]:]t[.s] and sets 'is' to EOF if last
 // returns true is placement present
-bool Emulator::read_placement_cell(Cell & place, Cell & val, Unumber N)
-{
+bool Emulator::read_placement_cell(Cell &place, Cell &val, Unumber N) {
     get_ts(val, N);
     eat_spaces();
 
     char c = get_char();
-    if (c != ':')
-    {
+    if (c != ':') {
         put_back(c);
         return false;
     }
@@ -263,8 +226,7 @@ bool Emulator::read_placement_cell(Cell & place, Cell & val, Unumber N)
     return true;
 }
 
-void Emulator::read_cell(Unumber N, Cell & addr)
-{
+void Emulator::read_cell(Unumber N, Cell &addr) {
     Cell place, value;
     bool placement = read_placement_cell(place, value, N);
 
@@ -274,10 +236,8 @@ void Emulator::read_cell(Unumber N, Cell & addr)
     mem.put(addr, value);
 }
 
-void Emulator::mkmem_stream(Pragma & pgm, string pragmaClo)
-{
-    while (1)
-    {
+void Emulator::mkmem_stream(Pragma &pgm, string pragmaClo) {
+    while (1) {
         char c = get_char();
         put_back(c);
 
@@ -297,17 +257,15 @@ void Emulator::mkmem_stream(Pragma & pgm, string pragmaClo)
     cq_type = pgm.cqtype;
 
     Cell addr(0, 0);
-    const Unumber & N = pgm.N();
+    const Unumber &N = pgm.N();
     Cell::setN(N);
 
     bool entry_set = false;
 
-    while (*current_input_stream)
-    {
+    while (*current_input_stream) {
         read_cell(N, addr);
 
-        if (!entry_set)
-        {
+        if (!entry_set) {
             entry = addr;
             entry_set = true;
         }

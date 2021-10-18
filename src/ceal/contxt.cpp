@@ -20,117 +20,107 @@
 #include "errex.h"
 #include "pragma.h"
 
-void Context::init_clo(int ac, const char * av[])
-{
-    for ( int i = 1; i < ac; i++ )
-    {
-        if ( av[i][0] != '-' ) { input_file = av[i]; continue; }
+void Context::init_clo(int ac, const char *av[]) {
+    for (int i = 1; i < ac; i++) {
+        if (av[i][0] != '-') {
+            input_file = av[i];
+            continue;
+        }
 
         string s = av[i];
-        if ( s.size() == 1 ) stdio = true;
-        else if ( s.size() == 2 )
-        {
+        if (s.size() == 1) stdio = true;
+        else if (s.size() == 2) {
             if (0);
-            else if ( s[1] == 's' ) bshow = true;
-            else if ( s[1] == 'E' ) preproc = true;
+            else if (s[1] == 's') bshow = true;
+            else if (s[1] == 'E') preproc = true;
             else if (s[1] == 'p' && ++i < ac) clo_pragma = av[i];
             else if (s[1] == 'o' && ++i < ac) output_file = av[i];
             else if (s[1] == 't' && ++i < ac) clo_show = av[i];
             else if (s[1] == 'r' && ++i < ac) clo_seed = av[i];
-            else if ( s[1] == 'x' ) { do_emulate = true; do_translate = false; }
-            else if ( s[1] == 'e' ) { do_emulate = false; do_translate = true; }
-            else if ( s[1] == 'a' ) { do_emulate = do_translate = true; }
+            else if (s[1] == 'x') {
+                do_emulate = true;
+                do_translate = false;
+            }
+            else if (s[1] == 'e') {
+                do_emulate = false;
+                do_translate = true;
+            }
+            else if (s[1] == 'a') { do_emulate = do_translate = true; }
             else if (s[1] == 'b' && ++i < ac) separator = av[i];
             else if (s[1] == 'd' && ++i < ac) stat.init(av[i]);
 
-            else if (s[1] == 'c' && i + 2 < ac)
-            {
+            else if (s[1] == 'c' && i + 2 < ac) {
                 bcrypt = true;
                 crypt_fun = av[++i];
                 crypt_file = av[++i];
-            }
-
-            else if (s[1] == 'I' && ++i < ac)
+            } else if (s[1] == 'I' && ++i < ac)
                 Input_token_stream::include_paths.push_back(av[i]);
 
-            else if ( s[1] == 'm' )
-            {
+            else if (s[1] == 'm') {
                 mmcalc = true;
                 run_mmc(ac - i, &av[i]);
-            }
-
-            else
+            } else
                 throw "Unknown option [" + s + "]";
-        }
-        else
+        } else
             throw "Unknown option [" + s + "]";
     }
 
-    const string & in = input_file;
+    const string &in = input_file;
 
     string ext;
-    if ( in.size() > 4 ) ext = in.substr( in.size() - 4 );
+    if (in.size() > 4) ext = in.substr(in.size() - 4);
 
-    if ( bcrypt && output_file.empty() )
-    {
+    if (bcrypt && output_file.empty()) {
         output_file = crypt_file + ".out";
-    }
-
-    else if ( !in.empty() && output_file.empty() )
-    {
+    } else if (!in.empty() && output_file.empty()) {
         if (ext == ".sca" || ext == ".sct")
             output_file = in.substr(0, in.size() - 4) + ".sce";
         else
             output_file = in + ".sce";
     }
 
-    if ( !do_emulate && !do_translate ) // not set - deduce
+    if (!do_emulate && !do_translate) // not set - deduce
     {
         do_emulate = do_translate = true;
 
-        if ( ext == ".sct" )
+        if (ext == ".sct")
             do_emulate = false;
 
-        if ( ext == ".sce" )
+        if (ext == ".sce")
             do_translate = false;
     }
 }
 
-void Context::show() const
-{
+void Context::show() const {
     std::cout << "Context: input=[" << input_file;
     std::cout << "] output=[" << output_file << "]\n";
 }
 
-Tokens Context::tokenize(const string & data) const
-{
+Tokens Context::tokenize(const string &data) const {
     std::istringstream fin(data);
 
     IncludeTranslator it(compiler->proc.N);
 
     Input_token_stream in(it);
 
-    if ( data == "stdin" )
+    if (data == "stdin")
         in.is = &std::cin;
-    else
-    {
-        if ( !fin ) throw "Internal error in Context::tokenize";
+    else {
+        if (!fin) throw "Internal error in Context::tokenize";
         in.is = &fin;
     }
 
     return in.tokenize();
 }
 
-void Context::save(const string & data) const
-{
+void Context::save(const string &data) const {
     std::ofstream fout;
 
-    std::ostream * out;
+    std::ostream *out;
 
     if (output_file.empty() || output_file == "stdout" || output_file == "-")
         out = &std::cout;
-    else
-    {
+    else {
         fout.open(output_file.c_str());
         out = &fout;
         if (!fout) throw "Cannot open [" + output_file + "] for writing";
@@ -139,8 +129,7 @@ void Context::save(const string & data) const
     (*out) << data;
 }
 
-string Context::write(const Tokens & tokens, Pragma & pgm)
-{
+string Context::write(const Tokens &tokens, Pragma &pgm) {
     std::ostringstream out;
 
     // first write pramga
@@ -148,22 +137,24 @@ string Context::write(const Tokens & tokens, Pragma & pgm)
 
     {
         string io = pgm.iostr();
-        if ( !io.empty() )
+        if (!io.empty())
             out << ' ' << io;
     }
 
-    if ( !pgm.entry.empty() ) out << " entry=" << pgm.entry;
-    if ( pgm.cqtype == Pragma::Cqtype::X ) out << " cqtype=x";
+    if (!pgm.entry.empty()) out << " entry=" << pgm.entry;
+    if (pgm.cqtype == Pragma::Cqtype::X) out << " cqtype=x";
     out << " id=" << pgm.id << " ver=" << pgm.ver;
 
     //out << '\n'; // new line is added by "tokens[0].line-1"
 
-    if ( tokens.empty() ) return "";
+    if (tokens.empty()) return "";
 
     int line = tokens[0].line - 1;
-    for ( auto t : tokens )
-    {
-        if ( line != t.line ) { out << '\n'; line = t.line; }
+    for (auto t: tokens) {
+        if (line != t.line) {
+            out << '\n';
+            line = t.line;
+        }
         else out << ' ';
         out << t.str();
     }
@@ -173,13 +164,11 @@ string Context::write(const Tokens & tokens, Pragma & pgm)
     return out.str();
 }
 
-Pnode Context::parse(const Tokens & tokens, Compiler * comp)
-{
+Pnode Context::parse(const Tokens &tokens, Compiler *comp) {
     return Parser(tokens).program(comp);
 }
 
-void Context::evaluate(Pnode & itr)
-{
+void Context::evaluate(Pnode &itr) {
     // substitute macros
     // expand strings
     // move definitions
@@ -222,28 +211,25 @@ void Context::evaluate(Pnode & itr)
 }
 
 
-Tokens Context::compile(Pnode & itr, bool outx)
-{
-    Root * root = itr->root();
+Tokens Context::compile(Pnode &itr, bool outx) {
+    Root *root = itr->root();
 
-    const Unumber & N = root->comp->proc.N;
-    if ( outx && N.iszero() )
+    const Unumber &N = root->comp->proc.N;
+    if (outx && N.iszero())
         throw Err("N not defined: output request X format");
 
     Tokens r;
 
     Cell addr(0, 0);
 
-    auto & proc = root->comp->proc;
-    Nodes & instructions = root->children;
+    auto &proc = root->comp->proc;
+    Nodes &instructions = root->children;
 
-    for (auto i : instructions)
-    {
-        Nodes & lis = i->children;
+    for (auto i: instructions) {
+        Nodes &lis = i->children;
 
-        for (auto l : lis )
-        {
-            Litem * pl = get<Litem>(LNFUN, l);
+        for (auto l: lis) {
+            Litem *pl = get<Litem>(LNFUN, l);
 
             Token t(pl->tok());
             t.typk = Token::tStr;
@@ -251,8 +237,7 @@ Tokens Context::compile(Pnode & itr, bool outx)
             t.s = "";
 
             if (pl->address == addr) {}
-            else
-            {
+            else {
                 addr = pl->address;
 
                 if (outx)
@@ -275,11 +260,10 @@ Tokens Context::compile(Pnode & itr, bool outx)
     return r;
 }
 
-void Context::itrshow(int stage, Pnode & itr)
-{
+void Context::itrshow(int stage, Pnode &itr) {
     string sst = bug::to_string(stage);
 
-    if ( clo_show.find(sst) == string::npos ) return;
+    if (clo_show.find(sst) == string::npos) return;
 
     std::cout << "====AST" << sst << "=====\n";
     std::cout << itr->dump();
@@ -288,13 +272,12 @@ void Context::itrshow(int stage, Pnode & itr)
     std::cout << "============\n";
 }
 
-Unumber order(Unumber x, Unumber M)
-{
+Unumber order(Unumber x, Unumber M) {
     const unsigned ORCMAX = 10000;
 
     Unumber g = ma::gcd(M, x);
 
-    if ( g != 1 )
+    if (g != 1)
         throw Err("Crypt order is not coprime to N ("
                   + x.str() + "|" + M.str() + ")");
 
@@ -302,8 +285,7 @@ Unumber order(Unumber x, Unumber M)
     Unumber gc = grn;
 
     unsigned cntr = ORCMAX;
-    while (--cntr > 0)
-    {
+    while (--cntr > 0) {
         gc = gc.mul(grn, M);
 
         if (gc == grn)
@@ -317,58 +299,39 @@ Unumber order(Unumber x, Unumber M)
     return ORCMAX - cntr;
 }
 
-void Context::crypt() const
-{
+void Context::crypt() const {
     string fun = crypt_fun;
     auto comp = compiler;
 
-    auto f = [fun, comp](Unumber x)
-    {
+    auto f = [fun, comp](Unumber x) {
         if (0) {}
 
-        else if (fun == "xenc")
-        {
+        else if (fun == "xenc") {
             Cell r = comp->encrypt(x);
             return r.x().str();
-        }
-
-        else if (fun == "xdec" || fun == "tsdec")
-        {
+        } else if (fun == "xdec" || fun == "tsdec") {
             Cell a(x, Cell::X);
             return comp->decrypt(a, nullptr).str();
-        }
-
-        else if (fun == "xord" || fun == "tsord")
-        {
+        } else if (fun == "xord" || fun == "tsord") {
             return order(x, comp->proc.N2).str();
-        }
-
-        else if (fun == "xdec_r" || fun == "tsdec_r")
-        {
+        } else if (fun == "xdec_r" || fun == "tsdec_r") {
             Cell a(x, Cell::X);
             Unumber R;
             string d = comp->decrypt(a, &R).str();
             return d + " (" + R.str() + ")";
-        }
-
-        else if (fun == "tsenc")
-        {
+        } else if (fun == "tsenc") {
             Cell r = comp->encrypt(x);
             return r.str();
-        }
-
-        else
+        } else
             throw Err("Invalid crypter function '" + fun + "'");
     };
 
-    auto ts2x = [](string & x)
-    {
+    auto ts2x = [](string &x) {
         auto i = x.find('.');
         Unumber t, s(0);
-        if ( i == string::npos )
+        if (i == string::npos)
             t = Unumber(x, Unumber::Decimal);
-        else
-        {
+        else {
             t = Unumber(x.substr(0, i), Unumber::Decimal);
             s = Unumber(x.substr(i + 1), Unumber::Decimal);
         }
@@ -376,13 +339,11 @@ void Context::crypt() const
         x = Cell(t, s).x().str();
     };
 
-    auto isTs = [](string x)
-    {
+    auto isTs = [](string x) {
         return !x.compare(0, 5, "tsdec") || !x.compare(0, 5, "tsord");
     };
 
-    if ( !crypt_file.empty() && crypt_file[0] != '@' )
-    {
+    if (!crypt_file.empty() && crypt_file[0] != '@') {
 
         std::ifstream in(crypt_file.c_str());
         if (!in)
@@ -390,42 +351,39 @@ void Context::crypt() const
 
         string data;
 
-        for (string s; in >> s;)
-        {
-            if ( isTs(fun) ) ts2x(s);
+        for (string s; in >> s;) {
+            if (isTs(fun)) ts2x(s);
             Unumber x(s, Unumber::Decimal);
             string a = f(x);
             data += a + '\n';
         }
 
         save(data);
-    }
-    else
-    {
+    } else {
         string s = crypt_file.substr(1);
-        if ( isTs(fun) ) ts2x(s);
+        if (isTs(fun)) ts2x(s);
         Unumber x(s, Unumber::Decimal);
         std::cout << f(x) << '\n';
     }
 }
 
-void Context::run_mmc(int ac, const char * av[])
-{
-    if ( ac < 2 ) { mmc::gin = &std::cin; mmc::mmcf(); }
-    else if ( ac == 2 )
-    {
-        std::ifstream in(av[1]);
-        if ( !in ) throw "Cannot open " + string(av[1]);
-        mmc::interactive = false;
-        mmc::gin = &in; mmc::mmcf();
+void Context::run_mmc(int ac, const char *av[]) {
+    if (ac < 2) {
+        mmc::gin = &std::cin;
+        mmc::mmcf();
     }
-
-    else
-    {
+    else if (ac == 2) {
+        std::ifstream in(av[1]);
+        if (!in) throw "Cannot open " + string(av[1]);
+        mmc::interactive = false;
+        mmc::gin = &in;
+        mmc::mmcf();
+    } else {
         string s;
-        for ( int i = 1; i < ac; i++ ) s += string() + ' ' + av[i];
+        for (int i = 1; i < ac; i++) s += string() + ' ' + av[i];
         std::istringstream is(s);
         mmc::interactive = false;
-        mmc::gin = &is; mmc::mmcf();
+        mmc::gin = &is;
+        mmc::mmcf();
     }
 }

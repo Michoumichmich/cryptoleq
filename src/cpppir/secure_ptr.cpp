@@ -15,11 +15,10 @@
 //**********************************************************************************
 // definitions
 
-template <Compiler & M>
-secure_int<M> & secure_ptr<M>::operator[](const open_int<M> & i)
-{
+template<Compiler &M>
+secure_int<M> &secure_ptr<M>::operator[](const open_int<M> &i) {
     auto j = data.find(i);
-    if ( j == data.end() ) data[i] = secure_int<M>::zero;
+    if (j == data.end()) data[i] = secure_int<M>::zero;
     return data[i];
 }
 
@@ -35,6 +34,7 @@ secure_int<M> & secure_ptr<M>::operator[](const open_int<M> & i)
 //**********************************************************************************
 // instantiation
 
-template class secure_ptr<compiler>;
+template
+class secure_ptr<compiler>;
 
 // end of instantiation

@@ -9,16 +9,14 @@
 #include "getptr.h"
 #include "errex.h"
 
-Pnode Parser::program(Compiler * comp)
-{
+Pnode Parser::program(Compiler *comp) {
     root = new Root; // ok - returning Pnode
     root->comp = comp;
 
-    if ( ts.empty() ) return Pnode(root);
+    if (ts.empty()) return Pnode(root);
 
     Nodes leftover_labels;
-    while ( !ts[ip].is(Token::tEof) )
-    {
+    while (!ts[ip].is(Token::tEof)) {
         Pnode i = macro(leftover_labels);
 
         if (!i)
@@ -36,40 +34,33 @@ Pnode Parser::program(Compiler * comp)
     return Pnode(root);
 }
 
-Pnode Parser::instruction(Nodes & leftover_labels)
-{
-    Instruction * i = new Instruction(ts[ip]);
+Pnode Parser::instruction(Nodes &leftover_labels) {
+    Instruction *i = new Instruction(ts[ip]);
 
-    if ( ts[ip].is(Token::tTld) )
-    {
+    if (ts[ip].is(Token::tTld)) {
         i->tilda = true;
         ++ip;
     }
 
-    if ( ts[ip].is(Token::tDot) ) // note: no else if
+    if (ts[ip].is(Token::tDot)) // note: no else if
     {
         i->typ = Instruction::eData;
         ++ip;
-    }
-    else if ( ts[ip].is(Token::tLcu) )
-    {
+    } else if (ts[ip].is(Token::tLcu)) {
         i->typ = Instruction::eCurl;
         ++ip;
     }
 
-    while (1)
-    {
+    while (1) {
         Pnode li = litem(leftover_labels);
 
-        if ( !li )
-        {
-            if ( i->typ == Instruction::eCurl )
-            {
-                if ( ts[ip].is(Token::tRcu) ) break;
+        if (!li) {
+            if (i->typ == Instruction::eCurl) {
+                if (ts[ip].is(Token::tRcu)) break;
                 throw Err("Expecting '}'", ts[ip]);
             }
 
-            if ( ts[ip].isEos() ) break;
+            if (ts[ip].isEos()) break;
             throw Err("Unexpected token", ts[ip]);
         }
 
@@ -81,14 +72,12 @@ Pnode Parser::instruction(Nodes & leftover_labels)
     return Pnode(i);
 }
 
-Pnode Parser::macro(Nodes & leftover_labels)
-{
+Pnode Parser::macro(Nodes &leftover_labels) {
     auto ip0 = ip;
 
     //read labels
     Pnode labels(new Labels(ts[ip]));
-    while (1)
-    {
+    while (1) {
         Pnode lab = label();
         if (!lab)
             break;
@@ -96,14 +85,12 @@ Pnode Parser::macro(Nodes & leftover_labels)
         labels->addChild(lab);
     }
 
-    if (!ts[ip].is(Token::tMac))
-    {
+    if (!ts[ip].is(Token::tMac)) {
         ip = ip0;
         return Pnode();
     }
 
-    if (ts[ip].s == "def")
-    {
+    if (ts[ip].s == "def") {
         if (!labels->children.empty() || !leftover_labels.empty())
             throw Err("Macro definition cannot follow labels", ts[ip]);
 
@@ -111,18 +98,17 @@ Pnode Parser::macro(Nodes & leftover_labels)
     }
 
     // this is Macuse
-    for (auto i : leftover_labels)
+    for (auto i: leftover_labels)
         labels->addChild(i);
 
     leftover_labels.clear();
 
-    Macuse * mu = new Macuse(ts[ip], labels);
+    Macuse *mu = new Macuse(ts[ip], labels);
 
     ++ip;
 
     // now read all arguments
-    while (1)
-    {
+    while (1) {
         Pnode p = expr();
         if (!p) break;
         mu->addChild(p);
@@ -135,12 +121,11 @@ Pnode Parser::macro(Nodes & leftover_labels)
     return Pnode(mu);
 }
 
-Pnode Parser::macrodef()
-{
+Pnode Parser::macrodef() {
     if (!ts[ip++].is(Token::tMac))
         throw Err(LNFUN);
 
-    Macdef * md = new Macdef(ts[ip]); // getting the name
+    Macdef *md = new Macdef(ts[ip]); // getting the name
 
     Pnode i = id();
     if (!i) throw Err("Expecting macro name", ts[ip]);
@@ -150,8 +135,7 @@ Pnode Parser::macrodef()
     for (i = id(); i; i = id())
         md->argnams.push_back(i);
 
-    if (!ts[ip].isEos())
-    {
+    if (!ts[ip].isEos()) {
         if (!ts[ip++].is(Token::tCol))
             throw Err("Unexpected token in macro defintion", ts[ip - 1]);
 
@@ -167,8 +151,7 @@ Pnode Parser::macrodef()
     // at this point we have parsed macdef title - proceed with the body
 
     Nodes leftover_labels;
-    while (1)
-    {
+    while (1) {
         if (ts[ip].is(Token::tEof))
             throw Err("Unexpected end of file in macro definition", md->tok());
 
@@ -179,10 +162,9 @@ Pnode Parser::macrodef()
 
         if (!i) throw "Internal error - in macro def";
 
-        Macuse * mu = get<Macuse>(NOTHR, i);
+        Macuse *mu = get<Macuse>(NOTHR, i);
 
-        if (mu && mu->name() == "end")
-        {
+        if (mu && mu->name() == "end") {
             if (mu->children[0]->children.empty())
                 break; // no need to create @end instruction
 
@@ -202,21 +184,18 @@ Pnode Parser::macrodef()
     return Pnode(md);
 }
 
-Pnode Parser::litem(Nodes & leftover_labels)
-{
+Pnode Parser::litem(Nodes &leftover_labels) {
     auto i0 = ip;
     auto ip0 = ip;
 
     // first check Def: id = expr
     Pnode nid = id();
-    if (ts[ip].is(Token::tEql))
-    {
+    if (ts[ip].is(Token::tEql)) {
         ++ip;
         Pnode pex = expr();
 
-        if (!pex)
-        {
-            if ( ts[ip].is(Token::tTld))
+        if (!pex) {
+            if (ts[ip].is(Token::tTld))
                 throw Err("Invalid tilde - use $enc() instead", ts[ip]);
 
             throw Err("Bad expression", ts[ip]);
@@ -230,18 +209,16 @@ Pnode Parser::litem(Nodes & leftover_labels)
 
     //read labels
     Pnode labels(new Labels(ts[ip]));
-    while (1)
-    {
+    while (1) {
         Pnode lab = label();
-        if ( !lab )
+        if (!lab)
             break;
 
         labels->addChild(lab);
 
-        if (ts[ip].is(Token::tEol) || ts[ip].is(Token::tSmc))
-        {
+        if (ts[ip].is(Token::tEol) || ts[ip].is(Token::tSmc)) {
             // labels are read but left hanging - add them for the next instruction
-            for (auto i : labels->children)
+            for (auto i: labels->children)
                 leftover_labels.push_back(i);
             return Pnode();
         }
@@ -251,16 +228,14 @@ Pnode Parser::litem(Nodes & leftover_labels)
 
     Pnode itm = item();
 
-    if (!itm)
-    {
+    if (!itm) {
         ip = i0;
         return Pnode();
     }
 
     {
-        Item * pitm = get<Item>(NOTHR, itm);
-        if (pitm && pitm->typ == Item::eId)
-        {
+        Item *pitm = get<Item>(NOTHR, itm);
+        if (pitm && pitm->typ == Item::eId) {
             Token e(0, 0);
             if (!labels->children.empty()) e = labels->children[0]->tok();
             if (!leftover_labels.empty()) e = leftover_labels[0]->tok();
@@ -270,7 +245,7 @@ Pnode Parser::litem(Nodes & leftover_labels)
     }
 
     // Litem is good - move all leftovers
-    for (auto i : leftover_labels)
+    for (auto i: leftover_labels)
         labels->addChild(i);
 
     leftover_labels.clear();
@@ -278,38 +253,32 @@ Pnode Parser::litem(Nodes & leftover_labels)
     return Pnode(new Litem(ts[ip0], labels, itm, Litem::eItm));
 }
 
-Pnode Parser::item()
-{
+Pnode Parser::item() {
 
     auto i0 = ip;
     bool tld = false;
-    if ( ts[ip].is(Token::tTld) )
-    {
+    if (ts[ip].is(Token::tTld)) {
         tld = true;
         ++ip;
     }
 
-    if ( ts[ip].is(Token::tLsq) )
-    {
-        Item * i = new Item(ts[ip]);
+    if (ts[ip].is(Token::tLsq)) {
+        Item *i = new Item(ts[ip]);
         i->tilda = tld;
 
         auto i1 = ++ip;
         Pnode n = id();
-        if ( n )
-        {
+        if (n) {
             i->typ = Item::eId;
             if (tld) throw Err("Tilde cannot be used with array size variables", ts[i0]);
-        }
-        else
-        {
+        } else {
             ip = i1;
             n = expr();
             i->typ = Item::eNum;
             if (!n) throw Err("Bad expr in []", ts[i1]);
         }
 
-        if ( !ts[ip++].is(Token::tRsq) )
+        if (!ts[ip++].is(Token::tRsq))
             throw Err("Expecting ']'", ts[ip - 1]);
 
         i->addChild(n);
@@ -319,8 +288,7 @@ Pnode Parser::item()
     Pitem j(new Item(ts[ip]));
     j->tilda = tld;
 
-    if (ts[ip].is(Token::tStr))
-    {
+    if (ts[ip].is(Token::tStr)) {
         j->typ = Item::eStr;
         ip++;
         return Pnode(j);
@@ -328,8 +296,7 @@ Pnode Parser::item()
 
     Pnode ex = expr();
 
-    if ( !ex )
-    {
+    if (!ex) {
         ip = i0;
         return Pnode();
     }
@@ -339,41 +306,33 @@ Pnode Parser::item()
     return Pnode(j);
 }
 
-Pnode Parser::id()
-{
+Pnode Parser::id() {
     if (!ts[ip].is(Token::tIdt))
         return Pnode();
     return Pnode(new Idn(ts[ip++]));
 }
 
-Pnode Parser::expr()
-{
+Pnode Parser::expr() {
     auto ip0 = ip;
     Pnode ltm = term();
     if (!ltm)
         return Pnode();
 
-    Expr * ex = nullptr;
+    Expr *ex = nullptr;
     Expr::Typ typ = Expr::eTerm;
 
-    while (1)
-    {
-        if (ts[ip].is(Token::tPls))
-        {
+    while (1) {
+        if (ts[ip].is(Token::tPls)) {
             typ = Expr::ePlus;
             ++ip;
-        }
-        else if (ts[ip].is(Token::tMin))
-        {
+        } else if (ts[ip].is(Token::tMin)) {
             typ = Expr::eMinus;
             ++ip;
-        }
-        else
-        {
+        } else {
             if (ex)
                 return Pnode(ex);
 
-            Expr * r = new Expr(ts[ip0]);
+            Expr *r = new Expr(ts[ip0]);
             r->addChild(ltm);
             return Pnode(r);
         }
@@ -382,16 +341,13 @@ Pnode Parser::expr()
         if (!rtm)
             throw Err("Expecting expression", ts[ip]);
 
-        if (!ex)
-        {
+        if (!ex) {
             ex = new Expr(ts[ip]);
             ex->typ = typ;
             ex->addChild(ltm);
             ex->addChild(rtm);
-        }
-        else
-        {
-            Expr * nx = new Expr(ts[ip]);
+        } else {
+            Expr *nx = new Expr(ts[ip]);
             nx->typ = typ;
             nx->addChild(Pnode(ex));
             nx->addChild(rtm);
@@ -402,15 +358,12 @@ Pnode Parser::expr()
     throw Err(LNFUN);
 }
 
-Pnode Parser::term()
-{
+Pnode Parser::term() {
     auto i0 = ip;
-    if (ts[ip].is(Token::tMin))
-    {
+    if (ts[ip].is(Token::tMin)) {
         ++ip;
         Pnode tm = term();
-        if (!tm)
-        {
+        if (!tm) {
             ip = i0;
             return Pnode();
         }
@@ -425,8 +378,7 @@ Pnode Parser::term()
     if (x)
         return Pnode(new Term(ts[i0], x, Term::eId));
 
-    if (ts[ip].is(Token::tDol))
-    {
+    if (ts[ip].is(Token::tDol)) {
         ++ip;
         x = id();
         if (!x)
@@ -439,8 +391,7 @@ Pnode Parser::term()
         return Pnode(new Term(ts[i0], x, as, Term::eFunc));
     }
 
-    if (ts[ip].is(Token::tLbr))
-    {
+    if (ts[ip].is(Token::tLbr)) {
         ++ip;
         x = expr();
         if (!x)
@@ -455,8 +406,7 @@ Pnode Parser::term()
     return Pnode();
 }
 
-Pnode Parser::cnst()
-{
+Pnode Parser::cnst() {
     if (ts[ip].is(Token::tQmk))
         return Pnode(new Cnst(ts[ip++], Cnst::eQmk));
 
@@ -471,13 +421,12 @@ Pnode Parser::cnst()
     return Pnode();
 }
 
-Pnode Parser::tsnumber()
-{
+Pnode Parser::tsnumber() {
     Pnode t = unumber();
     if (!t)
         return Pnode();
 
-    if (!ts[ip].is(Token::tDot) )
+    if (!ts[ip].is(Token::tDot))
         return Pnode(new Tsnum(t->tok(), t));
 
     ++ip;
@@ -488,27 +437,23 @@ Pnode Parser::tsnumber()
     return Pnode(new Tsnum(t->tok(), t, s));
 }
 
-Pnode Parser::unumber()
-{
+Pnode Parser::unumber() {
     if (!ts[ip].is(Token::tNum))
         return Pnode();
 
     return Pnode(new Unum(ts[ip++]));
 }
 
-Pnode Parser::label()
-{
+Pnode Parser::label() {
     auto i0 = ip;
     Pnode pn = id();
-    if ( !pn )
-    {
+    if (!pn) {
         pn = tsnumber();
-        if ( !pn )
+        if (!pn)
             return Pnode();
     }
 
-    if ( !ts[ip].is(Token::tCol) )
-    {
+    if (!ts[ip].is(Token::tCol)) {
         ip = i0;
         return Pnode();
     }
@@ -517,16 +462,14 @@ Pnode Parser::label()
     return pn;
 }
 
-Nodes Parser::args()
-{
+Nodes Parser::args() {
     Nodes r;
 
     if (!ts[ip].is(Token::tLbr)) throw Err(LNFUN);
 
     ++ip;
 
-    while (!ts[ip].is(Token::tRbr))
-    {
+    while (!ts[ip].is(Token::tRbr)) {
         Pnode ex = expr();
 
         if (!ex)
@@ -534,8 +477,7 @@ Nodes Parser::args()
 
         r.push_back(ex);
 
-        if (ts[ip].is(Token::tCma))
-        {
+        if (ts[ip].is(Token::tCma)) {
             ++ip;
             continue;
         }

@@ -1,4 +1,4 @@
-extern const char * BIGNUM_NAME;
+extern const char *BIGNUM_NAME;
 
 #ifndef GMP
 

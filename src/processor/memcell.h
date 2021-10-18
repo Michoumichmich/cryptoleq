@@ -14,179 +14,204 @@
 
 #include "../unumber/unumberg.h"
 
-class CellCommon
-{
-    protected:
-        static Unumber N, N2;
+class CellCommon {
+protected:
+    static Unumber N, N2;
 
-        static bool inv(const Unumber & x, const Unumber & n, Unumber * xm1);
-        static Unumber toX(Unumber t, Unumber s);
-        static Unumber fake();
+    static bool inv(const Unumber &x, const Unumber &n, Unumber *xm1);
 
-    public:
+    static Unumber toX(Unumber t, Unumber s);
 
-        struct TsVal
-        {
-            Unumber t, s;
-            TsVal(Unumber at, Unumber as) : t(at), s(as) {}
-        };
+    static Unumber fake();
 
-        enum Vtype { X, TS };
+public:
 
-        static void setN(Unumber n) { N = N2 = n; N2 *= N; }
-        static Unumber getN() { return N; }
-        static Unumber inv(const Unumber & x, const Unumber & n);
+    struct TsVal {
+        Unumber t, s;
+
+        TsVal(Unumber at, Unumber as) : t(at), s(as) {}
+    };
+
+    enum Vtype {
+        X, TS
+    };
+
+    static void setN(Unumber n) {
+        N = N2 = n;
+        N2 *= N;
+    }
+
+    static Unumber getN() { return N; }
+
+    static Unumber inv(const Unumber &x, const Unumber &n);
 };
 
-class CellTs : public CellCommon
-{
-    private:
+class CellTs : public CellCommon {
+private:
 
-        TsVal v;
+    TsVal v;
 
-        static CellTs fromX(Unumber x);
+    static CellTs fromX(Unumber x);
 
-    public:
+public:
 
-        static const Vtype based = TS;
+    static const Vtype based = TS;
 
-        CellTs() : v { 0, 0 } {}
-        CellTs(Unumber at, Unumber as) : v { at, as } {}
-        CellTs(Unumber at, Vtype vt) : v { at, 0 } { if (vt == X) v = fromX(at).v;  }
+    CellTs() : v{0, 0} {}
 
-        TsVal ts() const { return v; }
-        Unumber x() const { return toX(v.t, v.s); }
+    CellTs(Unumber at, Unumber as) : v{at, as} {}
 
-        bool operator<(const CellTs & x) const
-        { return std::tie(v.s, v.t) < std::tie(x.v.s, x.v.t); }
+    CellTs(Unumber at, Vtype vt) : v{at, 0} { if (vt == X) v = fromX(at).v; }
 
-        bool operator==(const CellTs & x) const
-        { return std::tie(v.t, v.s) == std::tie(x.v.t, x.v.s); }
+    TsVal ts() const { return v; }
 
-        void operator++() { ++v.t; overflow();  }
-        void operator--() { --v.t; underflow();  }
+    Unumber x() const { return toX(v.t, v.s); }
 
-        void overflow()
-        {
-            if (N.iszero()) return;
-            if (v.t < N) return;
-            v.t -= N;
-        }
+    bool operator<(const CellTs &x) const { return std::tie(v.s, v.t) < std::tie(x.v.s, x.v.t); }
 
-        void underflow()
-        {
-            if (N.iszero()) return;
-            if (v.t < N) return;
-            v.t += N;
-        }
+    bool operator==(const CellTs &x) const { return std::tie(v.t, v.s) == std::tie(x.v.t, x.v.s); }
 
-        string str() const;
+    void operator++() {
+        ++v.t;
+        overflow();
+    }
 
-        CellTs invert() const
-        { return CellTs(CellCommon::inv(x(), N2), X); }
+    void operator--() {
+        --v.t;
+        underflow();
+    }
 
-        CellTs operator*(const CellTs & z)
-        {
-            Unumber r = x().mul(z.x(), N2);
-            return CellTs(r, X);
-        }
+    void overflow() {
+        if (N.iszero()) return;
+        if (v.t < N) return;
+        v.t -= N;
+    }
+
+    void underflow() {
+        if (N.iszero()) return;
+        if (v.t < N) return;
+        v.t += N;
+    }
+
+    string str() const;
+
+    CellTs invert() const { return CellTs(CellCommon::inv(x(), N2), X); }
+
+    CellTs operator*(const CellTs &z) {
+        Unumber r = x().mul(z.x(), N2);
+        return CellTs(r, X);
+    }
 };
 
-class CellX : public CellCommon
-{
-        Unumber z;
+class CellX : public CellCommon {
+    Unumber z;
 
-    public:
+public:
 
-        static const Vtype based = X;
+    static const Vtype based = X;
 
-        CellX() : z { 1 } {}
-        CellX(Unumber t, Unumber s): z {toX(t, s)} {}
-        CellX(Unumber t, Vtype v): z {t} { if (v == TS) z = toX(t, 0);  }
+    CellX() : z{1} {}
 
-        TsVal ts() const;
-        Unumber x() const { return z; }
+    CellX(Unumber t, Unumber s) : z{toX(t, s)} {}
 
-        void operator++()
-        {
-            if (N.iszero()) { ++z; return; }
-            z += N;
-            if (z < N2) return;
-            z -= N2;
+    CellX(Unumber t, Vtype v) : z{t} { if (v == TS) z = toX(t, 0); }
+
+    TsVal ts() const;
+
+    Unumber x() const { return z; }
+
+    void operator++() {
+        if (N.iszero()) {
+            ++z;
+            return;
         }
+        z += N;
+        if (z < N2) return;
+        z -= N2;
+    }
 
-        void operator--()
-        {
-            if (N.iszero()) { --z; return; }
-            z -= N;
-            if (z < N2) return;
-            z += N2;
+    void operator--() {
+        if (N.iszero()) {
+            --z;
+            return;
         }
+        z -= N;
+        if (z < N2) return;
+        z += N2;
+    }
 
-        string str() const;
+    string str() const;
 
-        bool operator==(const CellX & x) const
-        { return z == x.z; }
+    bool operator==(const CellX &x) const { return z == x.z; }
 
-        bool operator<(const CellX & x) const
-        { return z < x.z; }
+    bool operator<(const CellX &x) const { return z < x.z; }
 
-        CellX invert() const
-        { return CellX(CellCommon::inv(x(), N2), X); }
+    CellX invert() const { return CellX(CellCommon::inv(x(), N2), X); }
 
-        CellX operator*(const CellX & x)
-        {
-            Unumber r = z.mul(x.z, N2);
-            return CellX(r, X);
-        }
+    CellX operator*(const CellX &x) {
+        Unumber r = z.mul(x.z, N2);
+        return CellX(r, X);
+    }
 };
 
-template <class T>
-class CellInv : public CellCommon
-{
-        T a;
-        T b;
+template<class T>
+class CellInv : public CellCommon {
+    T a;
+    T b;
 
-    public:
+public:
 
-        static const Vtype based = T::based;
+    static const Vtype based = T::based;
 
-        static void setN(Unumber n) { CellCommon::setN(n);  T::setN(n); }
+    static void setN(Unumber n) {
+        CellCommon::setN(n);
+        T::setN(n);
+    }
 
-        CellInv(const T & za, const T & zb) : a(za), b(zb) {}
+    CellInv(const T &za, const T &zb) : a(za), b(zb) {}
 
-        CellInv() : a(), b() {}
-        CellInv(Unumber t, Unumber s) : a { t, s }, b(a.invert()) {}
-        CellInv(Unumber t, Vtype v) : a { t, v }, b(a.invert()) {}
+    CellInv() : a(), b() {}
 
-        CellInv invert() const
-        {
-            CellInv r;
-            r.a = b;
-            r.b = a;
-            return r;
-        }
+    CellInv(Unumber t, Unumber s) : a{t, s}, b(a.invert()) {}
 
-        TsVal ts() const { return a.ts(); }
-        Unumber x() const { return a.x(); }
+    CellInv(Unumber t, Vtype v) : a{t, v}, b(a.invert()) {}
 
-        void operator++() { ++a; --b; }
-        void operator--() { --a; ++b; }
-        string str() const { return a.str(); }
-        bool operator==(const CellInv & x) const { return a == x.a; }
-        bool operator<(const CellInv & x) const { return a < x.a; }
+    CellInv invert() const {
+        CellInv r;
+        r.a = b;
+        r.b = a;
+        return r;
+    }
 
-        CellInv operator*(const CellInv & x)
-        {
-            return CellInv(a * x.a, b * x.b);
-        }
+    TsVal ts() const { return a.ts(); }
+
+    Unumber x() const { return a.x(); }
+
+    void operator++() {
+        ++a;
+        --b;
+    }
+
+    void operator--() {
+        --a;
+        ++b;
+    }
+
+    string str() const { return a.str(); }
+
+    bool operator==(const CellInv &x) const { return a == x.a; }
+
+    bool operator<(const CellInv &x) const { return a < x.a; }
+
+    CellInv operator*(const CellInv &x) {
+        return CellInv(a * x.a, b * x.b);
+    }
 };
 
 using CellInvTs = CellInv<CellTs>;
 using CellInvX = CellInv<CellX>;
 
-struct DoublePlug : public CellCommon
-{
+struct DoublePlug : public CellCommon {
     using A = CellTs;
     using B = CellInvX;
     using D = DoublePlug;
@@ -196,31 +221,31 @@ struct DoublePlug : public CellCommon
 
     static const Vtype based = A::based;
 
-    static void setN(Unumber n) { CellCommon::setN(n);  A::setN(n); B::setN(n); }
+    static void setN(Unumber n) {
+        CellCommon::setN(n);
+        A::setN(n);
+        B::setN(n);
+    }
 
-    DoublePlug(A x)
-    {
+    DoublePlug(A x) {
         auto ts = x.ts();
         a = A(ts.t, ts.s);
         b = B(ts.t, ts.s);
     }
 
-    void chk(TsVal a, TsVal b) const
-    {
+    void chk(TsVal a, TsVal b) const {
         if (a.t != b.t)
             throw "Boom1";
         if (a.s != b.s)
             throw "Boom2";
     }
 
-    void chk(Unumber a, Unumber b) const
-    {
+    void chk(Unumber a, Unumber b) const {
         if (a != b)
             throw "Boom3";
     }
 
-    void chk(A a, B b) const
-    {
+    void chk(A a, B b) const {
         auto ats = a.ts();
         auto bts = b.ts();
 
@@ -232,11 +257,12 @@ struct DoublePlug : public CellCommon
     }
 
     DoublePlug() : a(), b() {}
-    DoublePlug(Unumber t, Unumber s) : a { t, s }, b { t, s } {}
-    DoublePlug(Unumber t, Vtype v) : a { t, v }, b { t, v } {}
 
-    D invert() const
-    {
+    DoublePlug(Unumber t, Unumber s) : a{t, s}, b{t, s} {}
+
+    DoublePlug(Unumber t, Vtype v) : a{t, v}, b{t, v} {}
+
+    D invert() const {
         A x = a.invert();
         B y = b.invert();
         chk(a, b);
@@ -245,17 +271,48 @@ struct DoublePlug : public CellCommon
         return r;
     }
 
-    TsVal ts() const { auto ats = a.ts(); auto bts = b.ts(); chk(ats, bts); return ats; }
-    Unumber x() const { auto ax = a.x(); auto bx = b.x(); chk(ax, bx); return ax; }
+    TsVal ts() const {
+        auto ats = a.ts();
+        auto bts = b.ts();
+        chk(ats, bts);
+        return ats;
+    }
 
-    void operator++() { ++a; ++b; chk(a, b); }
-    void operator--() { --a; --b; chk(a, b); }
-    string str() const { chk(a, b); return a.str(); }
-    bool operator==(const D & x) const { chk(a, b); return a == x.a; }
-    bool operator<(const D & x) const { chk(a, b); return a < x.a; }
+    Unumber x() const {
+        auto ax = a.x();
+        auto bx = b.x();
+        chk(ax, bx);
+        return ax;
+    }
 
-    D operator*(const D & x)
-    {
+    void operator++() {
+        ++a;
+        ++b;
+        chk(a, b);
+    }
+
+    void operator--() {
+        --a;
+        --b;
+        chk(a, b);
+    }
+
+    string str() const {
+        chk(a, b);
+        return a.str();
+    }
+
+    bool operator==(const D &x) const {
+        chk(a, b);
+        return a == x.a;
+    }
+
+    bool operator<(const D &x) const {
+        chk(a, b);
+        return a < x.a;
+    }
+
+    D operator*(const D &x) {
         A ra = a * x.a;
         B rb = b * x.b;
         chk(ra, rb);
@@ -263,23 +320,23 @@ struct DoublePlug : public CellCommon
     }
 };
 
-#if CELLDEF==1
+#if CELLDEF == 1
 using Cell = CellTs;
 const char CellName[] = "1:Ts";
 
-#elif CELLDEF==2
+#elif CELLDEF == 2
 using Cell = CellX;
 const char CellName[] = "2:X";
 
-#elif CELLDEF==3
+#elif CELLDEF == 3
 using Cell = CellInvTs;
 const char CellName[] = "3:InvTs";
 
-#elif CELLDEF==4
+#elif CELLDEF == 4
 using Cell = CellInvX;
 const char CellName[] = "4:InvX";
 
-#elif CELLDEF==5
+#elif CELLDEF == 5
 using Cell = DoublePlug;
 const char CellName[] = "5:DoublePlug";
 

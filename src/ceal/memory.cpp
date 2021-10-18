@@ -7,29 +7,25 @@
 
 #include "memory.h"
 
-void MemoryTs::put(Cell place, Cell value)
-{
+void MemoryTs::put(Cell place, Cell value) {
     auto pts = place.ts();
-    const Unumber & t = pts.t;
+    const Unumber &t = pts.t;
 
-    Sector & sector = m[pts.s];
+    Sector &sector = m[pts.s];
     auto i = sector.upper_bound(pts.t);
 
-    if ( i == sector.begin() )
-    {
+    if (i == sector.begin()) {
         sector.insert(std::pair<Tvalue, Section>(t, Section(t)));
         i = sector.begin();
-    }
-    else
+    } else
         --i;
 
-    if ( i->second.end() == t )
-    {
+    if (i->second.end() == t) {
         i->second.v.push_back(value);
         return;
     }
 
-    if ( t < i->second.end() )
+    if (t < i->second.end())
         throw "Memory overlap while loading: " + place.str();
 
     auto k = sector.insert(std::pair<Tvalue, Section>(t, Section(t)));
@@ -37,8 +33,7 @@ void MemoryTs::put(Cell place, Cell value)
     i->second.v.push_back(value);
 
     // check overlap with the next section (safe to delete later)
-    if (0)
-    {
+    if (0) {
         if (++i == sector.end())
             return; // ok
 
@@ -48,41 +43,37 @@ void MemoryTs::put(Cell place, Cell value)
     }
 }
 
-Cell & MemoryTs::operator[](const Cell & place)
-{
+Cell &MemoryTs::operator[](const Cell &place) {
     auto pts = place.ts();
-    const Unumber & t = pts.t;
+    const Unumber &t = pts.t;
 
-    Sector & sector = m[pts.s];
+    Sector &sector = m[pts.s];
     auto i = sector.upper_bound(pts.t);
 
     if (i == sector.begin()) goto bad;
     --i;
 
     {
-        auto & j = i->second;
+        auto &j = i->second;
         if (t < j.end()) {}
         else goto bad;
 
-        size_t idx = (size_t)(t - j.start).to_ull();
+        size_t idx = (size_t) (t - j.start).to_ull();
         return j.v[idx];
     }
 
-bad:
+    bad:
     throw "Memory access violation, address=" + place.str();
 }
 
-string MemoryTs::dump() const
-{
+string MemoryTs::dump() const {
     string r;
 
-    for (auto i : m)
-    {
-        for (auto j : i.second)
-        {
+    for (auto i: m) {
+        for (auto j: i.second) {
             r += j.first.str() + "." + i.first.str() + ":\t";
 
-            for (auto k : j.second.v)
+            for (auto k: j.second.v)
                 r += " " + k.str();
 
             r += '\n';

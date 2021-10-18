@@ -13,53 +13,57 @@
 
 #include "memcell.h"
 
-class ProcessorU
-{
-    public:
-        ProcessorU(): N(0) {}
-        ProcessorU(Unumber n): N(0) { init(n); }
+class ProcessorU {
+public:
+    ProcessorU() : N(0) {}
 
-        Unumber N, N2; // N2=N^2
+    ProcessorU(Unumber n) : N(0) { init(n); }
 
-        unsigned beta; // B2 = 2^beta, negative bit position
-        Unumber A2, B2; // alpha and beta parameters
-        Unumber Xp1, Xp2; // for leq X test
+    Unumber N, N2; // N2=N^2
 
-        unsigned high_bit_posN;
-        unsigned high_bit_posN2;
+    unsigned beta; // B2 = 2^beta, negative bit position
+    Unumber A2, B2; // alpha and beta parameters
+    Unumber Xp1, Xp2; // for leq X test
 
-        void init(Unumber n);
-        void setB2Beta(unsigned beta);
-        void show() const;
+    unsigned high_bit_posN;
+    unsigned high_bit_posN2;
 
-    protected:
-        bool leq_u(const Unumber & x) const;
+    void init(Unumber n);
+
+    void setB2Beta(unsigned beta);
+
+    void show() const;
+
+protected:
+    bool leq_u(const Unumber &x) const;
 
 };
 
-class ProcessorTS : public ProcessorU
-{
-        void zeroExtract(const Cell & c, Unumber & t, Unumber & s) const;
-        bool leq_ts(const Cell & x) const;
-        bool leq_x(const Cell & x) const;
+class ProcessorTS : public ProcessorU {
+    void zeroExtract(const Cell &c, Unumber &t, Unumber &s) const;
 
-    public:
-        ProcessorTS(): ProcessorU() {}
-        ProcessorTS(Unumber n): ProcessorU(n) {}
+    bool leq_ts(const Cell &x) const;
 
-        Cell BAm1(const Cell & A, const Cell & B) const;
-        Cell BAtt(const Cell & A, const Cell & B) const;
+    bool leq_x(const Cell &x) const;
 
-        bool leq(const Cell & z) const
-        {
-            return Cell::based == Cell::X ? leq_x(z) : leq_ts(z);
-        }
+public:
+    ProcessorTS() : ProcessorU() {}
 
-        string str(const Cell & x) const;
+    ProcessorTS(Unumber n) : ProcessorU(n) {}
 
-        Cell x2ts(const Unumber & x) const { return Cell(x, Cell::X); }
+    Cell BAm1(const Cell &A, const Cell &B) const;
+
+    Cell BAtt(const Cell &A, const Cell &B) const;
+
+    bool leq(const Cell &z) const {
+        return Cell::based == Cell::X ? leq_x(z) : leq_ts(z);
+    }
+
+    string str(const Cell &x) const;
+
+    Cell x2ts(const Unumber &x) const { return Cell(x, Cell::X); }
 };
 
-Unumber congruence(Unumber x, const Unumber & n);
+Unumber congruence(Unumber x, const Unumber &n);
 
 #endif

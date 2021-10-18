@@ -15,13 +15,12 @@ using std::string;
 
 #define LNFUN __LINE__,__FUNCTION__,__FILE__
 #define NOTHR 0,0,0
+
 template<class T>
-inline T * get(int line, const char * fn, const char * fl, Pnode p)
-{
-    Node * n = p.get();
-    if (n)
-    {
-        T * rp = dynamic_cast<T *>(n);
+inline T *get(int line, const char *fn, const char *fl, Pnode p) {
+    Node *n = p.get();
+    if (n) {
+        T *rp = dynamic_cast<T *>(n);
         if (rp)
             return rp;
 

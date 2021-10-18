@@ -9,36 +9,32 @@
 
 #include "utils.h"
 
-Unumber make_unumber(string v, Unumber def)
-{
-    if ( v.empty() )
+Unumber make_unumber(string v, Unumber def) {
+    if (v.empty())
         return def;
 
-    if ( v == "time" )
+    if (v == "time")
         return Unumber(std::time(0));
 
     return Unumber(v, Unumber::Decimal);
 }
 
-string print_char(char c)
-{
+string print_char(char c) {
     string sc;
-    if ( c >= ' ' && c <= '~' )
+    if (c >= ' ' && c <= '~')
         return sc += c;
 
     std::ostringstream os;
     os << std::hex << int(c);
     sc = os.str();
-    if ( sc.size() < 2 ) sc = "0" + sc;
+    if (sc.size() < 2) sc = "0" + sc;
     sc = "\\x" + sc;
     return sc;
 }
 
-Cell str2ts(const string & s)
-{
+Cell str2ts(const string &s) {
     auto i = s.find('.');
-    if ( i == string::npos )
-    {
+    if (i == string::npos) {
         Unumber x(s, Unumber::Decimal);
         return Cell(x, 0);
     }
@@ -49,13 +45,12 @@ Cell str2ts(const string & s)
     return Cell(xt, xs);
 }
 
-string file2str(const string & file)
-{
+string file2str(const string &file) {
     const int MAX_FILE_SIZE = 100000000;
 
     std::ifstream in(file.c_str(), std::ios::binary);
 
-    if ( !in )
+    if (!in)
         return "";
 
     string r;
@@ -64,19 +59,18 @@ string file2str(const string & file)
 
     size_t sz = size_t(in.tellg());
 
-    if ( sz > MAX_FILE_SIZE )
+    if (sz > MAX_FILE_SIZE)
         throw "too big file " + file;
 
-    r.reserve( sz );
+    r.reserve(sz);
     in.seekg(0, std::ios::beg);
 
-    r.assign( std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>() );
+    r.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
 
     return r;
 }
 
-bool isfile(const string & file)
-{
+bool isfile(const string &file) {
     std::ifstream in(file.c_str());
     return !!in;
 }
@@ -86,15 +80,16 @@ bool isfile(const string & file)
 #include <direct.h>
 #define GetCurrentDir _getcwd
 #else
+
 #include <unistd.h>
+
 #define GetCurrentDir getcwd
 #endif
 
-string cwd()
-{
+string cwd() {
     char ccp[1000];
     ccp[0] = '\0';
-    void * p = GetCurrentDir(ccp, sizeof(ccp));
-    if ( p == nullptr ) throw "getcwd returns failure";
+    void *p = GetCurrentDir(ccp, sizeof(ccp));
+    if (p == nullptr) throw "getcwd returns failure";
     return ccp;
 }

@@ -19,19 +19,19 @@ typedef secure_int<compiler> sec_int;
 typedef open_int<compiler> opn_int;
 typedef secure_ptr<compiler> sec_ptr;
 
-struct TableFile
-{
-    static const char * const name;
+struct TableFile {
+    static const char *const name;
 
     opn_int size();
+
     void load(sec_ptr &);
 };
-const char * const TableFile::name = "db.sec";
+
+const char *const TableFile::name = "db.sec";
 
 void save_output(sec_int);
 
-void test()
-{
+void test() {
     opn_int o16 = opn_int::two * opn_int::two * opn_int::two * opn_int::two;
 
     cout << opn_int::two.show() << '\n';
@@ -59,8 +59,7 @@ void test()
     cout << "4*4= " << (s4 * s4).show() << '\n';
 }
 
-int main() try
-{
+int main() try {
     cout << "Compiled with: Cell=" << CellName << ", Bignum=" << BIGNUM_NAME << '\n';
 
     compiler.init_pqkru();
@@ -73,13 +72,16 @@ int main() try
 
     TableFile tablefile;
 
-    sec_ptr tbl(tablefile.size()*opn_int::two, compiler.random());
+    sec_ptr tbl(tablefile.size() * opn_int::two, compiler.random());
     tablefile.load(tbl);
 
     sec_int load_input();
     sec_int input = load_input();
 
-    if (0) {test(); return 0;}
+    if (0) {
+        test();
+        return 0;
+    }
 
     sec_int sum = sec_int::zero;
 
@@ -88,13 +90,11 @@ int main() try
     cout << "entries : " << tbl_sz.show() << '\n';
     cout << "input   : " << input.show() << '\n';
 
-    for ( opn_int i = opn_int::zero; i < tbl_sz; ++i )
-    {
+    for (opn_int i = opn_int::zero; i < tbl_sz; ++i) {
         sec_int key = tbl[i + i];
         sec_int val = tbl[i + i + opn_int::one];
 
-        if (0)
-        {
+        if (0) {
             sec_int ki = key.equal(input);
             sec_int mv = ki * val;
             sec_int s0 = sum;
@@ -107,8 +107,7 @@ int main() try
                  << "  s0:" << s0.show()
                  << "  sum:" << sum.show()
                  << '\n';
-        }
-        else
+        } else
             sum += key.equal(input) * val;
 
         cout << "key=" << key.show() << "\t\t" << "sum=" << sum.show() << '\n';
@@ -116,47 +115,43 @@ int main() try
 
     save_output(sum);
 }
-catch (const char * e) { cout << "Error: " << e << "\n"; }
+catch (const char *e) { cout << "Error: " << e << "\n"; }
 catch (std::string e) { cout << "Error: " << e << "\n"; }
-catch (std::exception & e) { cout << "Error: std::exception: " << e.what() << "\n"; }
+catch (std::exception &e) { cout << "Error: std::exception: " << e.what() << "\n"; }
 catch (...) { cout << "Exception thrown\n"; }
 
-void save_output(sec_int x)
-{
+void save_output(sec_int x) {
     std::ofstream of("output.sec");
     of << x.str() << '\n';
 }
 
-sec_int load_input()
-{
-    const char * name = "input.sec";
+sec_int load_input() {
+    const char *name = "input.sec";
     std::ifstream in(name);
-    if ( !in ) throw string() + "Cannot open " + name;
+    if (!in) throw string() + "Cannot open " + name;
 
     Unumber u;
     in >> u;
     return u;
 }
 
-void TableFile::load(sec_ptr & table)
-{
+void TableFile::load(sec_ptr &table) {
     std::ifstream in(name);
-    if ( !in ) throw string() + "Cannot open " + name;
+    if (!in) throw string() + "Cannot open " + name;
 
     opn_int i = opn_int::zero;
 
-    for ( Unumber x; in >> x; i++ )
+    for (Unumber x; in >> x; i++)
         table[i] = x;
 }
 
-open_int<compiler> TableFile::size()
-{
+open_int<compiler> TableFile::size() {
     std::ifstream in(name);
-    if ( !in ) throw string() + "Cannot open " + name;
+    if (!in) throw string() + "Cannot open " + name;
 
     open_int<compiler> i = open_int<compiler>::zero;
 
-    for ( Unumber x; in >> x >> x; i++ ) {}
+    for (Unumber x; in >> x >> x; i++) {}
 
     return i;
 }

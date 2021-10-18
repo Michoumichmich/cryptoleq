@@ -12,29 +12,40 @@
 
 using std::string;
 
-class Parser
-{
-        const Tokens & ts;
-        Tokens::size_type ip = 0;
-        Root * root = nullptr;
+class Parser {
+    const Tokens &ts;
+    Tokens::size_type ip = 0;
+    Root *root = nullptr;
 
-    public:
-        Parser(const Tokens & t) : ts(t) {}
-        Pnode program(Compiler * comp);
+public:
+    Parser(const Tokens &t) : ts(t) {}
 
-    private:
-        Pnode macro(Nodes & leftover_labels);
-        Pnode macrodef();
-        Pnode instruction(Nodes & leftover_labels);
-        Pnode litem(Nodes & leftover_labels);
-        Pnode id();
-        Pnode expr();
-        Pnode item();
-        Pnode label();
-        Pnode unumber();
-        Pnode tsnumber();
-        Pnode term();
-        Pnode cnst();
+    Pnode program(Compiler *comp);
 
-        Nodes args();
+private:
+    Pnode macro(Nodes &leftover_labels);
+
+    Pnode macrodef();
+
+    Pnode instruction(Nodes &leftover_labels);
+
+    Pnode litem(Nodes &leftover_labels);
+
+    Pnode id();
+
+    Pnode expr();
+
+    Pnode item();
+
+    Pnode label();
+
+    Pnode unumber();
+
+    Pnode tsnumber();
+
+    Pnode term();
+
+    Pnode cnst();
+
+    Nodes args();
 };

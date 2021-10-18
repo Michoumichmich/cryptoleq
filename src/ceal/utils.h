@@ -17,11 +17,16 @@
 using std::string;
 
 string print_char(char c);
+
 int hex_char_to_int(char c);
+
 Unumber make_unumber(string v, Unumber def);
-Cell str2ts(const string & s);
-string file2str(const string & file);
-bool isfile(const string & file);
+
+Cell str2ts(const string &s);
+
+string file2str(const string &file);
+
+bool isfile(const string &file);
 
 string cwd();
 

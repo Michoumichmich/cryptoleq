@@ -10,19 +10,20 @@
 #include "open_int.h"
 #include "secure_int.h"
 
-template <Compiler & M>
-class secure_ptr : public base_int<M>
-{
-        secure_int<M> ptr;
-        std::map< open_int<M>, secure_int<M> > data;
+template<Compiler &M>
+class secure_ptr : public base_int<M> {
+    secure_int<M> ptr;
+    std::map<open_int<M>, secure_int<M> > data;
 
-    public:
-        secure_ptr(const open_int<M> &, secure_int<M> p) : ptr(p) {}
-        ~secure_ptr() {}
+public:
+    secure_ptr(const open_int<M> &, secure_int<M> p) : ptr(p) {}
 
-        secure_int<M> & operator[](const open_int<M> &);
+    ~secure_ptr() {}
 
-    private:
-        secure_ptr(const secure_ptr &);
-        void operator=(const secure_ptr &);
+    secure_int<M> &operator[](const open_int<M> &);
+
+private:
+    secure_ptr(const secure_ptr &);
+
+    void operator=(const secure_ptr &);
 };

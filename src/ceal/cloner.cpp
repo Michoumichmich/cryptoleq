@@ -12,11 +12,10 @@
 #include "getptr.h"
 #include "errex.h"
 
-Pnode Node::baseclone(Pnode p) const
-{
+Pnode Node::baseclone(Pnode p) const {
     p->parent = parent;
 
-    for (auto i : children)
+    for (auto i: children)
         p->addChild(i->clone());
 
     return p;
@@ -24,20 +23,18 @@ Pnode Node::baseclone(Pnode p) const
 
 Pnode Root::clone() const { throw Err(LNFUN); }
 
-Pnode Instruction::clone() const
-{
-    Instruction * r = new Instruction(tok());
+Pnode Instruction::clone() const {
+    Instruction *r = new Instruction(tok());
     r->tilda = tilda;
     r->typ = typ;
     return baseclone(Pnode(r));
 }
 
-Pnode Litem::clone() const
-{
+Pnode Litem::clone() const {
     Pnode itm = children[0]->clone();
     Pnode lab = children[1]->clone();
 
-    Litem * r = new Litem(tok(), lab, itm, typ);
+    Litem *r = new Litem(tok(), lab, itm, typ);
 
     r->address = address;
     r->value = value;
@@ -45,52 +42,45 @@ Pnode Litem::clone() const
     return Pnode(r);
 }
 
-Pnode Item::clone() const
-{
-    Item * r = new Item(tok());
+Pnode Item::clone() const {
+    Item *r = new Item(tok());
     r->tilda = tilda;
     r->typ = typ;
 
     return baseclone(Pnode(r));
 }
 
-Pnode Expr::clone() const
-{
-    Expr * r = new Expr(tok());
+Pnode Expr::clone() const {
+    Expr *r = new Expr(tok());
     r->typ = typ;
     return baseclone(Pnode(r));
 }
 
-Pnode Cnst::clone() const
-{
-    Cnst * r = new Cnst(tok(), typ);
+Pnode Cnst::clone() const {
+    Cnst *r = new Cnst(tok(), typ);
     return baseclone(Pnode(r));
 }
 
-Pnode Term::clone() const
-{
-    Term * r = new Term(tok(), children[0], typ);
+Pnode Term::clone() const {
+    Term *r = new Term(tok(), children[0], typ);
     r->children.clear();
     return baseclone(Pnode(r));
 }
 
-Pnode Tsnum::clone() const
-{
-    Tsnum * r = new Tsnum(tok(), children[0]);
+Pnode Tsnum::clone() const {
+    Tsnum *r = new Tsnum(tok(), children[0]);
     r->children.clear();
     return baseclone(Pnode(r));
 }
 
-Pnode Macuse::clone() const
-{
-    Macuse * r = new Macuse(tok(), children[0]);
+Pnode Macuse::clone() const {
+    Macuse *r = new Macuse(tok(), children[0]);
     r->children.clear();
     return baseclone(Pnode(r));
 }
 
-Pnode Macdef::clone() const
-{
-    Macdef * r = new Macdef(tok());
+Pnode Macdef::clone() const {
+    Macdef *r = new Macdef(tok());
     r->name = name;
     r->argnams = argnams;
     r->globals = globals;
