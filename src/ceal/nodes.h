@@ -68,6 +68,8 @@ struct Node : protected Token {
 
     Node(Token t) : Token(std::move(t)), parent(nullptr) {}
 
+    virtual ~ Node() = default;
+
     void addChild(Pnode n);
 
     string dumpr(std::vector<int> &ind, bool middle) const;
@@ -96,19 +98,19 @@ protected:
 };
 
 struct Labels : Node {
-    Labels(Token t) : Node(t) {}
+    Labels(Token t) : Node(std::move(t)) {}
 
-    string print() const { return "labels"; }
+    string print() const final { return "labels"; }
 
-    Pnode clone() const { return baseclone(Pnode(new Labels(tok()))); }
+    Pnode clone() const final { return baseclone(Pnode(new Labels(tok()))); }
 };
 
 struct Root : Node {
     Root() : Node(Token(0, 0)) {}
 
-    string print() const { return "root"; }
+    string print() const final { return "root"; }
 
-    Compiler *comp;
+    Compiler *comp{};
     Nodes names_pending;
     std::map<string, Cell> names_defined;
     std::map<string, Pnode> names_arraysz;
@@ -134,7 +136,7 @@ struct Root : Node {
 
     void resolve_arraysz();
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 
@@ -148,11 +150,11 @@ struct Instruction : Node {
 
     Instruction(Token t) : Node(t), typ(eThree), tilda(false) {}
 
-    string print() const {
+    string print() const final {
         return string("instruction ") + (tilda ? "~" : "") + ".c3"[typ];
     }
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 struct HasTsValue {
@@ -169,9 +171,9 @@ struct Litem : Node {
 
     Litem(Token tk, Pnode lab, Pnode itm, Typ tp);
 
-    string print() const;
+    string print() const final;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 using Plitem = std::shared_ptr<Litem>;
@@ -183,11 +185,11 @@ struct Item : Node {
     Typ typ;
     bool tilda;
 
-    Item(Token tk) : Node(tk), typ(eNull), tilda(false) {}
+    Item(Token tk) : Node(std::move(tk)), typ(eNull), tilda(false) {}
 
-    string print() const;
+    string print() const final;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 using Pitem = std::shared_ptr<Item>;
@@ -200,21 +202,21 @@ struct Expr : Node, HasTsValue {
 
     Expr(Token tk) : Node(tk), typ(eTerm) {}
 
-    string print() const { return string("expr ") + "t+-"[typ]; }
+    string print() const final { return string("expr ") + "t+-"[typ]; }
 
-    Cell val() const;
+    Cell val() const final;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 struct Idn : Node {
     using Node::s;
 
-    Idn(Token t) : Node(t) {}
+    Idn(Token t) : Node(std::move(t)) {}
 
-    string print() const { return "id: " + s; }
+    string print() const final { return "id: " + s; }
 
-    Pnode clone() const { return baseclone(Pnode(new Idn(tok()))); }
+    Pnode clone() const final { return baseclone(Pnode(new Idn(tok()))); }
 };
 
 struct Cnst : Node, HasTsValue {
@@ -227,13 +229,13 @@ struct Cnst : Node, HasTsValue {
 
     Cnst(Token t, Pnode n, Typ tp) : Node(t), typ(tp) { addChild(n); }
 
-    string print() const;
+    string print() const final;
 
     using Token::s;
 
-    Cell val() const;
+    Cell val() const final;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 struct Unum : Node {
@@ -241,24 +243,24 @@ struct Unum : Node {
 
     Unum(Token t) : Node(t) {}
 
-    string print() const { return "unum " + un.str(); }
+    string print() const final { return "unum " + un.str(); }
 
-    Pnode clone() const { return baseclone(Pnode(new Unum(tok()))); }
+    Pnode clone() const final { return baseclone(Pnode(new Unum(tok()))); }
 };
 
 struct Tsnum : Node, HasTsValue {
-    Cell val() const;
+    Cell val() const final;
 
-    string print() const { return "tsnum"; }
+    string print() const final { return "tsnum"; }
 
-    Tsnum(Token k, Pnode t) : Node(k) { addChild(t); }
+    Tsnum(Token k, Pnode t) : Node(std::move(k)) { addChild(t); }
 
-    Tsnum(Token k, Pnode t, Pnode s) : Node(k) {
-        addChild(t);
-        addChild(s);
+    Tsnum(Token k, Pnode t, Pnode s) : Node(std::move(k)) {
+        addChild(std::move(t));
+        addChild(std::move(s));
     }
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
 struct Term : Node, HasTsValue {
@@ -274,9 +276,9 @@ struct Term : Node, HasTsValue {
         for (auto i: ns) addChild(i);
     }
 
-    string print() const { return string("term ") + "#e-cif"[typ]; }
+    string print() const final { return string("term ") + "#e-cif"[typ]; }
 
-    Cell val() const;
+    Cell val() const final;
 
     Cell func_call() const;
 
@@ -298,7 +300,7 @@ struct Term : Node, HasTsValue {
 
     Cell func_comp(int f, Token k) const;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 
     static Cell testB2beta(Cell t, Token k);
 
@@ -307,17 +309,17 @@ struct Term : Node, HasTsValue {
     static Unumber testRnd(Unumber x, Token k, Unumber N);
 };
 
-struct Macuse : Node {
-    Macuse(Token tk, Pnode prelabs) : Node(tk) { addChild(prelabs); }
+struct Macuse final : Node {
+    Macuse(Token tk, Pnode prelabs) : Node(std::move(tk)) { addChild(std::move(prelabs)); }
 
-    string print() const { return "." + name(); }
+    string print() const final { return "." + name(); }
 
     string name() const { return tok().s; }
 
-    Pnode clone() const;
+    Pnode clone() const final;
 };
 
-struct Macdef : Node {
+struct Macdef final : Node {
     string name;
     Nodes argnams;
     Nodes globals;
@@ -333,13 +335,13 @@ struct Macdef : Node {
 
     Macdef(Token tk) : Node(tk) {}
 
-    string print() const;
+    string print() const final;
 
-    Pnode clone() const;
+    Pnode clone() const final;
 
-    int idxGlobal(const string &name) const { return idx(name, globals); }
+    int idxGlobal(const string &name_in) const { return idx(name_in, globals); }
 
-    int idxArgs(const string &name) const { return idx(name, argnams); }
+    int idxArgs(const string &name_in) const { return idx(name_in, argnams); }
 
 protected:
     static int idx(const string &name, const Nodes &nodes);

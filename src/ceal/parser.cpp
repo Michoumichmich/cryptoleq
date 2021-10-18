@@ -35,7 +35,7 @@ Pnode Parser::program(Compiler *comp) {
 }
 
 Pnode Parser::instruction(Nodes &leftover_labels) {
-    Instruction *i = new Instruction(ts[ip]);
+    auto *i = new Instruction(ts[ip]);
 
     if (ts[ip].is(Token::tTld)) {
         i->tilda = true;
